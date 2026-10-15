@@ -1,0 +1,33 @@
+name,code
+Books and Journals,BO-JRN
+Building and Construction,BU-CON
+Celebration and Events,CE-EVE
+Construction Supply,CO-SUP
+Drugs and Medicines,DR-MED
+Equipment Maintenance,EQ-MAN
+Food Supply,FO-SUP
+"Food, Ingredients, and Grocery Items",FI-GRC
+Furniture and Fixture,FU-FIX
+Garden Supply,GA-SUP
+ICT Equipment,IT-EQP
+ICT Maintenance,IT-MAN
+Implant,IMP
+Janitorial Supply,JA-SUP
+Kitchen Equipment and Related Appliances,KE-APP
+"Kitchenware, Consumables and Other Supplies",KC-OTH
+Laboratory Supply,LA-SUP
+Linen and Laundry Supply,LL-SUP
+Medical Equipment,ME-EQP
+Medical Equipment Maintenance,ME-EQP-MAN
+Medical Instrument,ME-INS
+Medical Supply,ME-SUP
+Office Supply,OF-SUP
+Other Equipment,OT-EQP
+Other Equipment Maintenance,OT-EQP-MAN
+"Other Fees, Subscription, Processing",OT-SUB
+Other Supply,OT-SUP
+Other tools,OT-TLS
+Parts and Spare,PA-SPR
+Services and Consultancy,SE-CON
+Software and Subscription,ST-SUB
+Training Expenses,TR-EXP

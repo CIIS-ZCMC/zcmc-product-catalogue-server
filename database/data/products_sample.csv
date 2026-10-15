@@ -1,0 +1,4 @@
+,,,,,,Unit of Measure,Unit Price,"Technical Specifications
+Separate each with a semicolon (;)",,,
+id,erp_item_code,bizbox_item_code,philgeps_code,unspsc_code,item description,uom,unit_price,specifications,category_group,category,subcategory
+1,OFC-SUP-PP-01,,14111507-PP-M01,14111507,"PAPER, MULTICOPY, A4",ream,204.67,"80gsm;A4, 210mm x 297mm;500 sheets per ream",office supply,Paper Products,Printer or copier paper
