@@ -7,10 +7,14 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\InternalCategoryController;
+use App\Http\Controllers\Api\ItemUnitController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+// Standard Item Units (ERP UOM)
+Route::get('/item-units', [ItemUnitController::class, 'index']);
 
 // Dashboard endpoints
 Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
@@ -35,8 +39,11 @@ Route::get('/products/next-erp-code', [ProductController::class, 'nextErpCode'])
 Route::get('/products/export', [ProductController::class, 'export']);
 Route::post('/products/validate-naming', [ProductController::class, 'validateNaming']);
 Route::post('/products/import', [ProductController::class, 'import']);
+Route::post('/products/upload-specs-pdf', [ProductController::class, 'uploadSpecsPdf']);
+Route::get('/products/{id}/price-history', [ProductController::class, 'priceHistory']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 Route::post('/products', [ProductController::class, 'store']);
 Route::put('/products/{id}', [ProductController::class, 'update']);
 Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+
 

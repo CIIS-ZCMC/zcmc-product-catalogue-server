@@ -32,8 +32,8 @@ class ProductService
             $query->where('internal_category_id', $filters['internal_category_id']);
         }
 
-        if (!empty($filters['uom'])) {
-            $query->where('uom', $filters['uom']);
+        if (!empty($filters['uom']) && strtolower($filters['uom']) !== 'all') {
+            $query->whereRaw('LOWER(uom) = ?', [strtolower($filters['uom'])]);
         }
 
         $sortBy = $filters['sort_by'] ?? 'created_at';
@@ -83,7 +83,13 @@ class ProductService
      */
     public function createProduct(array $data): Product
     {
-        $data['item_description'] = strtoupper(trim($data['item_description']));
+        // Build standard item description from structured attributes if provided
+        $builtDesc = Product::buildStandardName($data);
+        if (!empty($builtDesc)) {
+            $data['item_description'] = $builtDesc;
+        } else {
+            $data['item_description'] = strtoupper(trim($data['item_description'] ?? ''));
+        }
 
         // Auto-derive UNSPSC code from category if not explicitly provided
         $categoryCode = !empty($data['unspsc_code']) ? $data['unspsc_code'] : null;
@@ -95,17 +101,18 @@ class ProductService
             }
         }
 
-        // Resolve internal category code
+        // Resolve internal category code from relationship
+        $internalCatCode = null;
         if (!empty($data['internal_category_id'])) {
             $internalCat = InternalCategory::find($data['internal_category_id']);
             if ($internalCat) {
-                $data['internal_category_code'] = $internalCat->code;
+                $internalCatCode = $internalCat->code;
             }
         }
 
         // Auto-generate unique ERP item code: [category->code]-[internal category code]-[seq starting at 01]
-        if (!empty($categoryCode) && !empty($data['internal_category_code'])) {
-            $data['erp_item_code'] = $this->generateNextErpCode($categoryCode, $data['internal_category_code']);
+        if (!empty($categoryCode) && !empty($internalCatCode)) {
+            $data['erp_item_code'] = $this->generateNextErpCode($categoryCode, $internalCatCode);
         } elseif (empty($data['erp_item_code'])) {
             $prefix = 'ZCMC-';
             $catCode = !empty($data['unspsc_code']) ? substr($data['unspsc_code'], 0, 4) : 'GEN';
@@ -115,7 +122,19 @@ class ProductService
         $data['unit_price'] = $data['unit_price'] ?? 0.00;
 
         $product = Product::create($data);
-        return $product->load(['categoryRelation', 'internalCategory']);
+
+        // Record initial price entry in product_price_histories
+        \App\Models\ProductPriceHistory::create([
+            'product_id' => $product->id,
+            'old_price' => null,
+            'new_price' => (float) $product->unit_price,
+            'price_change' => 0,
+            'percentage_change' => 0,
+            'reason' => !empty($data['price_change_reason']) ? $data['price_change_reason'] : 'Initial catalogue price',
+            'effective_date' => now(),
+        ]);
+
+        return $product->load(['categoryRelation', 'internalCategory', 'priceHistories']);
     }
 
     /**
@@ -123,7 +142,13 @@ class ProductService
      */
     public function updateProduct(Product $product, array $data): Product
     {
-        $data['item_description'] = strtoupper(trim($data['item_description']));
+        // Build standard item description from structured attributes if provided
+        $builtDesc = Product::buildStandardName($data);
+        if (!empty($builtDesc)) {
+            $data['item_description'] = $builtDesc;
+        } elseif (isset($data['item_description'])) {
+            $data['item_description'] = strtoupper(trim($data['item_description']));
+        }
 
         if (!empty($data['category_key']) && $data['category_key'] != $product->category_key) {
             if (empty($data['unspsc_code'])) {
@@ -134,20 +159,34 @@ class ProductService
             }
         }
 
-        if (!empty($data['internal_category_id'])) {
-            $internalCat = InternalCategory::find($data['internal_category_id']);
-            if ($internalCat) {
-                $data['internal_category_code'] = $internalCat->code;
-            }
-        }
-
         // Protect ERP item code: do not allow user overwrite if it's already generated
         if (isset($data['erp_item_code']) && !empty($product->erp_item_code)) {
             unset($data['erp_item_code']);
         }
 
+        // Track price change if unit_price was modified
+        if (isset($data['unit_price'])) {
+            $oldPrice = (float) $product->unit_price;
+            $newPrice = (float) $data['unit_price'];
+
+            if (abs($oldPrice - $newPrice) > 0.001) {
+                $change = $newPrice - $oldPrice;
+                $pct = $oldPrice > 0 ? round(($change / $oldPrice) * 100, 2) : 0;
+
+                \App\Models\ProductPriceHistory::create([
+                    'product_id' => $product->id,
+                    'old_price' => $oldPrice,
+                    'new_price' => $newPrice,
+                    'price_change' => $change,
+                    'percentage_change' => $pct,
+                    'reason' => !empty($data['price_change_reason']) ? $data['price_change_reason'] : 'Unit price adjustment / Inflation update',
+                    'effective_date' => now(),
+                ]);
+            }
+        }
+
         $product->update($data);
-        return $product->fresh()->load(['categoryRelation', 'internalCategory']);
+        return $product->fresh()->load(['categoryRelation', 'internalCategory', 'priceHistories']);
     }
 
     /**

@@ -44,12 +44,13 @@ class ProductController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $product = Product::with(['categoryRelation', 'internalCategory'])->findOrFail($id);
+        $product = Product::with(['categoryRelation', 'internalCategory', 'priceHistories'])->findOrFail($id);
 
         return response()->json([
             'product' => $product,
             'category_path' => $product->full_category_path,
             'category_hierarchy' => $product->category_hierarchy,
+            'price_history' => $product->priceHistories,
         ]);
     }
 
@@ -167,6 +168,41 @@ class ProductController extends Controller
             'imported' => $result['imported'],
             'updated' => $result['updated'],
             'errors' => $result['errors'],
+        ]);
+    }
+
+    /**
+     * Upload Technical Specifications PDF file for a product.
+     */
+    public function uploadSpecsPdf(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf|max:20480',
+        ]);
+
+        $file = $request->file('file');
+        $originalName = $file->getClientOriginalName();
+        $path = $file->store('tech_specs', 'public');
+
+        return response()->json([
+            'message' => 'Technical specifications PDF uploaded successfully.',
+            'file_path' => $path,
+            'file_url' => asset('storage/' . $path),
+            'original_filename' => $originalName,
+        ]);
+    }
+
+    /**
+     * Retrieve unit price change history for a product.
+     */
+    public function priceHistory(int $id): JsonResponse
+    {
+        $product = Product::findOrFail($id);
+
+        return response()->json([
+            'product_id' => $product->id,
+            'current_price' => (float) $product->unit_price,
+            'history' => $product->priceHistories,
         ]);
     }
 }
