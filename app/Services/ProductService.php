@@ -134,6 +134,21 @@ class ProductService
             'effective_date' => now(),
         ]);
 
+        // Record Activity Log
+        \App\Models\ActivityLog::record(
+            'CREATED',
+            "Product added to catalogue: {$product->item_description} ({$product->erp_item_code})",
+            'Product',
+            $product->id,
+            $product->erp_item_code,
+            null,
+            $product->only([
+                'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
+                'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code',
+                'unspsc_code', 'category_key', 'internal_category_id', 'other_specs'
+            ])
+        );
+
         return $product->load(['categoryRelation', 'internalCategory', 'priceHistories']);
     }
 
@@ -142,6 +157,13 @@ class ProductService
      */
     public function updateProduct(Product $product, array $data): Product
     {
+        // Snapshot old values before update
+        $oldValues = $product->only([
+            'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
+            'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code',
+            'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path'
+        ]);
+
         // Build standard item description from structured attributes if provided
         $builtDesc = Product::buildStandardName($data);
         if (!empty($builtDesc)) {
@@ -186,7 +208,37 @@ class ProductService
         }
 
         $product->update($data);
-        return $product->fresh()->load(['categoryRelation', 'internalCategory', 'priceHistories']);
+        $fresh = $product->fresh();
+
+        $newValues = $fresh->only([
+            'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
+            'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code',
+            'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path'
+        ]);
+
+        // Diff old and new values to capture only changed fields
+        $changedOld = [];
+        $changedNew = [];
+        foreach ($newValues as $key => $val) {
+            if (($oldValues[$key] ?? null) != $val) {
+                $changedOld[$key] = $oldValues[$key] ?? null;
+                $changedNew[$key] = $val;
+            }
+        }
+
+        if (!empty($changedNew)) {
+            \App\Models\ActivityLog::record(
+                'UPDATED',
+                "Product updated: {$fresh->item_description} ({$fresh->erp_item_code})",
+                'Product',
+                $fresh->id,
+                $fresh->erp_item_code,
+                $changedOld,
+                $changedNew
+            );
+        }
+
+        return $fresh->load(['categoryRelation', 'internalCategory', 'priceHistories']);
     }
 
     /**
@@ -194,6 +246,20 @@ class ProductService
      */
     public function deleteProduct(Product $product): bool
     {
+        $snapshot = $product->only([
+            'id', 'erp_item_code', 'item_description', 'noun', 'bizbox_item_code', 'philgeps_code', 'uom'
+        ]);
+
+        \App\Models\ActivityLog::record(
+            'DELETED',
+            "Product deleted from catalogue: {$product->item_description} ({$product->erp_item_code})",
+            'Product',
+            $product->id,
+            $product->erp_item_code,
+            $snapshot,
+            null
+        );
+
         return $product->delete();
     }
 }

@@ -19,12 +19,14 @@ class UserSeeder extends Seeder
                 'last_name' => 'Admin',
                 'email' => 'admin@zcmc.gov.ph',
                 'password' => Hash::make('Admin@123456'),
+                'is_admin' => true,
             ],
             [
                 'first_name' => 'Procurement',
                 'last_name' => 'Officer',
                 'email' => 'procurement@zcmc.gov.ph',
                 'password' => Hash::make('Procurement@123456'),
+                'is_admin' => false,
             ],
         ];
 

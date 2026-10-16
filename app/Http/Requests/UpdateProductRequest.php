@@ -35,6 +35,8 @@ class UpdateProductRequest extends FormRequest
             'other_specs' => 'nullable|string',
             'tech_specs_pdf_path' => 'nullable|string|max:500',
             'price_change_reason' => 'nullable|string|max:255',
+            'confirm_password' => 'nullable|string',
+            'password' => 'nullable|string',
         ];
     }
 }

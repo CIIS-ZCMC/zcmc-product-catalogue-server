@@ -111,8 +111,35 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, int $id): JsonResponse
     {
+        $user = $request->user();
+
+        // End users (non-admin) must verify their password to edit an existing product
+        if (!$user || !$user->is_admin) {
+            $password = $request->input('confirm_password') ?? $request->input('password');
+            if (empty($password)) {
+                return response()->json([
+                    'message' => 'Password confirmation is required to update an existing catalogue item.',
+                    'errors' => [
+                        'confirm_password' => ['Password confirmation is required for end users.'],
+                    ],
+                ], 422);
+            }
+
+            if (!\Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+                return response()->json([
+                    'message' => 'Invalid password confirmation. Please enter your correct account password.',
+                    'errors' => [
+                        'confirm_password' => ['The password you entered is incorrect.'],
+                    ],
+                ], 422);
+            }
+        }
+
         $product = Product::findOrFail($id);
-        $updated = $this->productService->updateProduct($product, $request->validated());
+        $data = $request->validated();
+        unset($data['confirm_password'], $data['password']);
+
+        $updated = $this->productService->updateProduct($product, $data);
 
         return response()->json([
             'message' => 'Product updated successfully.',
@@ -121,10 +148,17 @@ class ProductController extends Controller
     }
 
     /**
-     * Delete a product.
+     * Delete a product (Administrator only).
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || !$user->is_admin) {
+            return response()->json([
+                'message' => 'Unauthorized action. Only administrators can delete catalogue products.',
+            ], 403);
+        }
+
         $product = Product::findOrFail($id);
         $this->productService->deleteProduct($product);
 
@@ -163,6 +197,16 @@ class ProductController extends Controller
 
         $result = $this->exportImportService->importCsv($request->file('file'));
 
+        \App\Models\ActivityLog::record(
+            'IMPORTED',
+            "CSV bulk import: {$result['imported']} products added, {$result['updated']} products updated",
+            'Product',
+            null,
+            'Bulk CSV Import',
+            null,
+            ['imported_count' => $result['imported'], 'updated_count' => $result['updated'], 'filename' => $request->file('file')->getClientOriginalName()]
+        );
+
         return response()->json([
             'message' => "Import complete. {$result['imported']} added, {$result['updated']} updated.",
             'imported' => $result['imported'],
@@ -183,6 +227,16 @@ class ProductController extends Controller
         $file = $request->file('file');
         $originalName = $file->getClientOriginalName();
         $path = $file->store('tech_specs', 'public');
+
+        \App\Models\ActivityLog::record(
+            'PDF_UPLOADED',
+            "Uploaded technical specification PDF: {$originalName}",
+            'Product',
+            null,
+            $originalName,
+            null,
+            ['original_filename' => $originalName, 'file_path' => $path]
+        );
 
         return response()->json([
             'message' => 'Technical specifications PDF uploaded successfully.',

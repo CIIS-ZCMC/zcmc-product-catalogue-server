@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\InternalCategoryController;
 use App\Http\Controllers\Api\ItemUnitController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ActivityLogController;
 
 // Public Authentication Endpoints
 // Both /api/register and /api/auth/register work seamlessly
@@ -67,6 +68,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{id}', [ProductController::class, 'update']);
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+
+    // Activity / Audit Logs
+    Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+    Route::get('/products/{id}/activity-logs', [ActivityLogController::class, 'productLogs']);
 });
 
 

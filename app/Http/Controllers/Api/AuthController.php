@@ -52,6 +52,7 @@ class AuthController extends Controller
                 'last_name' => $user->last_name,
                 'name' => $user->name,
                 'email' => $user->email,
+                'is_admin' => (bool) $user->is_admin,
                 'created_at' => $user->created_at,
             ],
         ]);
@@ -119,6 +120,7 @@ class AuthController extends Controller
                 'last_name' => $user->last_name,
                 'name' => $user->name,
                 'email' => $user->email,
+                'is_admin' => (bool) $user->is_admin,
                 'created_at' => $user->created_at,
             ],
         ], 201);
@@ -260,6 +262,7 @@ class AuthController extends Controller
                 'last_name' => $user->last_name,
                 'name' => $user->name,
                 'email' => $user->email,
+                'is_admin' => (bool) $user->is_admin,
                 'created_at' => $user->created_at,
             ],
         ]);
