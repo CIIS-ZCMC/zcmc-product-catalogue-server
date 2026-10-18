@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -97,8 +100,21 @@ class ProductExportImportService
 
     /**
      * Import products from CSV.
+     *
+     * Encoders may only touch products in their assigned internal categories. The CSV carries no
+     * internal category, so for them only existing assigned products can be updated; any other
+     * row aborts the whole import with an AuthorizationException and nothing is written.
      */
-    public function importCsv(UploadedFile $file): array
+    public function importCsv(UploadedFile $file, ?User $user = null): array
+    {
+        if ($user && !$user->is_admin) {
+            return DB::transaction(fn () => $this->runImport($file, $user));
+        }
+
+        return $this->runImport($file, $user);
+    }
+
+    private function runImport(UploadedFile $file, ?User $user): array
     {
         $handle = fopen($file->getRealPath(), 'r');
         $imported = 0;
@@ -123,6 +139,15 @@ class ProductExportImportService
 
             try {
                 $erpCode = !empty($row[1]) ? trim($row[1]) : ('ZCMC-' . strtoupper(uniqid()));
+                if ($user && !$user->is_admin) {
+                    $existing = Product::where('erp_item_code', $erpCode)->first();
+                    if (!$user->canWriteInternalCategory($existing?->internal_category_id)) {
+                        throw new AuthorizationException(
+                            "Row {$rowIndex}: you can only import products in your assigned internal categories."
+                        );
+                    }
+                }
+
                 $desc = strtoupper(trim($row[5]));
                 $uom = !empty($row[6]) ? trim($row[6]) : 'piece';
                 $price = !empty($row[7]) ? (float) str_replace([',', ' '], '', $row[7]) : 0.00;
@@ -162,6 +187,8 @@ class ProductExportImportService
                 } else {
                     $updated++;
                 }
+            } catch (AuthorizationException $e) {
+                throw $e;
             } catch (\Exception $e) {
                 $errors[] = "Row {$rowIndex}: " . $e->getMessage();
             }

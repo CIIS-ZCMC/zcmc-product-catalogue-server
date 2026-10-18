@@ -10,17 +10,16 @@ use App\Http\Controllers\Api\InternalCategoryController;
 use App\Http\Controllers\Api\ItemUnitController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\UserController;
 
 // Public Authentication Endpoints
-// Both /api/register and /api/auth/register work seamlessly
+// Public registration is disabled: accounts are created by administrators via POST /users
 Route::post('/login', [AuthController::class, 'login'])->name('login');
-Route::post('/register', [AuthController::class, 'register']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
@@ -68,6 +67,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{id}', [ProductController::class, 'update']);
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+
+    // User management (administrators only)
+    Route::middleware('admin')->group(function () {
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    });
 
     // Activity / Audit Logs
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);

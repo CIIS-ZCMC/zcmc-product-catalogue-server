@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Services\ProductService;
 use App\Services\UniformNamingService;
 use App\Services\ProductExportImportService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -98,7 +99,13 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request): JsonResponse
     {
-        $product = $this->productService->createProduct($request->validated());
+        $data = $request->validated();
+
+        if ($denied = $this->denyCategories($request, [(int) $data['internal_category_id']])) {
+            return $denied;
+        }
+
+        $product = $this->productService->createProduct($data);
 
         return response()->json([
             'message' => 'Product catalogue item created successfully.',
@@ -112,6 +119,15 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, int $id): JsonResponse
     {
         $user = $request->user();
+        $product = Product::findOrFail($id);
+        $data = $request->validated();
+
+        // Both the current and the target internal category must be assigned to an encoder.
+        $oldCategory = $product->internal_category_id;
+        $newCategory = $data['internal_category_id'] ?? $oldCategory;
+        if ($denied = $this->denyCategories($request, [$oldCategory, $newCategory])) {
+            return $denied;
+        }
 
         // End users (non-admin) must verify their password to edit an existing product
         if (!$user || !$user->is_admin) {
@@ -135,8 +151,6 @@ class ProductController extends Controller
             }
         }
 
-        $product = Product::findOrFail($id);
-        $data = $request->validated();
         unset($data['confirm_password'], $data['password']);
 
         $updated = $this->productService->updateProduct($product, $data);
@@ -168,6 +182,26 @@ class ProductController extends Controller
     }
 
     /**
+     * Return a 403 response unless the user may write to every given internal category.
+     *
+     * @param  array<int, int|null>  $categoryIds
+     */
+    private function denyCategories(Request $request, array $categoryIds): ?JsonResponse
+    {
+        $user = $request->user();
+
+        foreach (array_unique($categoryIds, SORT_REGULAR) as $categoryId) {
+            if (!$user->canWriteInternalCategory($categoryId === null ? null : (int) $categoryId)) {
+                return response()->json([
+                    'message' => 'You are not assigned to this internal category.',
+                ], 403);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Uniform Naming Validator and Assistant for Procurement Unit.
      */
     public function validateNaming(Request $request): JsonResponse
@@ -195,7 +229,11 @@ class ProductController extends Controller
             'file' => 'required|file|mimes:csv,txt|max:10240',
         ]);
 
-        $result = $this->exportImportService->importCsv($request->file('file'));
+        try {
+            $result = $this->exportImportService->importCsv($request->file('file'), $request->user());
+        } catch (AuthorizationException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
+        }
 
         \App\Models\ActivityLog::record(
             'IMPORTED',

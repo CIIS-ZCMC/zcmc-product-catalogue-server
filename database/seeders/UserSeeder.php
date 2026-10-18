@@ -2,39 +2,44 @@
 
 namespace Database\Seeders;
 
+use App\Models\InternalCategory;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Seed one administrator and one encoder assigned to Office Supply only.
      */
     public function run(): void
     {
-        $users = [
+        User::updateOrCreate(
+            ['email' => 'admin@zcmc.gov.ph'],
             [
                 'first_name' => 'ZCMC',
                 'last_name' => 'Admin',
-                'email' => 'admin@zcmc.gov.ph',
-                'password' => Hash::make('Admin@123456'),
+                'password' => 'Admin@123456',
                 'is_admin' => true,
-            ],
-            [
-                'first_name' => 'Procurement',
-                'last_name' => 'Officer',
-                'email' => 'procurement@zcmc.gov.ph',
-                'password' => Hash::make('Procurement@123456'),
-                'is_admin' => false,
-            ],
-        ];
+                'is_active' => true,
+            ]
+        );
 
-        foreach ($users as $userData) {
-            User::updateOrCreate(
-                ['email' => $userData['email']],
-                $userData
-            );
-        }
+        $encoder = User::updateOrCreate(
+            ['email' => 'encoder.office@zcmc.gov.ph'],
+            [
+                'first_name' => 'Office Supply',
+                'last_name' => 'Encoder',
+                'password' => 'Encoder@123456',
+                'is_admin' => false,
+                'is_active' => true,
+            ]
+        );
+
+        $officeSupply = InternalCategory::firstOrCreate(
+            ['code' => 'OF-SUP'],
+            ['name' => 'Office Supply']
+        );
+
+        $encoder->internalCategories()->sync([$officeSupply->id]);
     }
 }

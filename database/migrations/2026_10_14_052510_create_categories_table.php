@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('title', 500);
             $table->text('definition')->nullable();
             $table->integer('level')->default(0)->index();
-            $table->string('path', 1000)->nullable()->index();
+            $table->string('path', 1000)->nullable();
             $table->timestamps();
 
             $table->foreign('parent_key')->references('key')->on('categories')->nullOnDelete();

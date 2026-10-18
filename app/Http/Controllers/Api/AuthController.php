@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ use Illuminate\Validation\Rules\Password;
 class AuthController extends Controller
 {
     /**
-     * Authenticate user with email and password only.
+     * Authenticate user with email and password only. Deactivated accounts get 403.
      */
     public function login(Request $request): JsonResponse
     {
@@ -39,6 +40,12 @@ class AuthController extends Controller
             ], 422);
         }
 
+        if (!$user->is_active) {
+            return response()->json([
+                'message' => 'Your account has been deactivated. Please contact an administrator.',
+            ], 403);
+        }
+
         // Generate Sanctum access token
         $token = $user->createToken('zcmc_catalogue_token')->plainTextToken;
 
@@ -46,86 +53,9 @@ class AuthController extends Controller
             'message' => 'Login successful.',
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => [
-                'id' => $user->id,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_admin' => (bool) $user->is_admin,
-                'created_at' => $user->created_at,
-            ],
+            'user' => (new UserResource($user->loadMissing('internalCategories')))->resolve(),
         ]);
     }
-
-    /**
-     * Register a new user with first name, last name, email, and strong password.
-     */
-    public function register(Request $request): JsonResponse
-    {
-        // Support either first_name/last_name or combined name input
-        if (!$request->filled('first_name') && $request->filled('name')) {
-            $parts = explode(' ', trim($request->input('name')), 2);
-            $request->merge([
-                'first_name' => $parts[0] ?: 'User',
-                'last_name' => $parts[1] ?? '',
-            ]);
-        }
-
-        $passwordRules = [
-            'required',
-            'string',
-            Password::min(8)
-                ->letters()
-                ->numbers()
-                ->symbols(),
-        ];
-
-        if ($request->has('password_confirmation')) {
-            $passwordRules[] = 'confirmed';
-        }
-
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'nullable|string|max:100',
-            'email' => 'required|email|max:255|unique:users,email',
-            'password' => $passwordRules,
-        ]);
-
-        $firstName = trim($validated['first_name']);
-        $lastName = trim($validated['last_name'] ?? '');
-        $email = strtolower(trim($validated['email']));
-
-        // Create user with first_name, last_name, and securely hashed password
-        $user = User::create([
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'email' => $email,
-            'password' => $validated['password'],
-        ]);
-
-        // Dispatch Welcome Email asynchronously via queued job
-        \App\Jobs\SendWelcomeEmailJob::dispatch($user);
-
-        // Generate Sanctum access token for immediate authentication
-        $token = $user->createToken('zcmc_catalogue_token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'User registered and authenticated successfully.',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => [
-                'id' => $user->id,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_admin' => (bool) $user->is_admin,
-                'created_at' => $user->created_at,
-            ],
-        ], 201);
-    }
-
 
     /**
      * Send 6-digit password reset verification code via SMTP email.
@@ -256,15 +186,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_admin' => (bool) $user->is_admin,
-                'created_at' => $user->created_at,
-            ],
+            'user' => (new UserResource($user->loadMissing('internalCategories')))->resolve(),
         ]);
     }
 }
