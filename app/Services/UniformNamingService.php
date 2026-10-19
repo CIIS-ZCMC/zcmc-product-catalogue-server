@@ -53,7 +53,7 @@ class UniformNamingService
         if ($description !== strtoupper($description)) {
             $score -= 20;
             $feedback[] = 'Description must be in UPPERCASE for uniform hospital procurement naming.';
-            $suggestions[] = 'Converted to: ' . strtoupper($description);
+            $suggestions[] = 'Converted to: '.strtoupper($description);
         }
 
         // Rule 2: Comma separation structure
@@ -78,7 +78,8 @@ class UniformNamingService
         }
 
         // Rule 4: Duplicate & similarity check in database
-        $firstWord = explode(' ', trim(str_replace(',', ' ', $description)))[0] ?? '';
+        $words = explode(' ', trim(str_replace(',', ' ', $description)));
+        $firstWord = $words[0];
         $similar = [];
         if (strlen($firstWord) >= 3) {
             $similar = Product::where('item_description', 'like', "%{$firstWord}%")
@@ -112,10 +113,11 @@ class UniformNamingService
         $parts = [strtoupper(trim($noun))];
         foreach ($specifications as $spec) {
             $trimmed = strtoupper(trim($spec));
-            if (!empty($trimmed)) {
+            if (! empty($trimmed)) {
                 $parts[] = $trimmed;
             }
         }
+
         return implode(', ', $parts);
     }
 }

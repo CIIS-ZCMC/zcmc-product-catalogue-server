@@ -27,9 +27,9 @@ class ActivityLogController extends Controller
             $s = trim($request->query('search'));
             $query->where(function ($q) use ($s) {
                 $q->where('description', 'like', "%{$s}%")
-                  ->orWhere('entity_identifier', 'like', "%{$s}%")
-                  ->orWhere('user_name', 'like', "%{$s}%")
-                  ->orWhere('user_email', 'like', "%{$s}%");
+                    ->orWhere('entity_identifier', 'like', "%{$s}%")
+                    ->orWhere('user_name', 'like', "%{$s}%")
+                    ->orWhere('user_email', 'like', "%{$s}%");
             });
         }
 

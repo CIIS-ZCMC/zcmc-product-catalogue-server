@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
+use App\Models\ActivityLog;
+use App\Models\Category;
+use App\Models\InternalCategory;
 use App\Models\Product;
+use App\Services\ProductExportImportService;
 use App\Services\ProductService;
 use App\Services\UniformNamingService;
-use App\Services\ProductExportImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -65,15 +69,15 @@ class ProductController extends Controller
         $internalCatId = $request->query('internal_category_id');
 
         // Resolve category code from category_key if not provided directly
-        if (empty($categoryCode) && !empty($categoryKey)) {
-            $cat = \App\Models\Category::find($categoryKey);
+        if (empty($categoryCode) && ! empty($categoryKey)) {
+            $cat = Category::find($categoryKey);
             if ($cat) {
                 $categoryCode = $cat->code;
             }
         }
 
-        if (!$internalCatCode && $internalCatId) {
-            $cat = \App\Models\InternalCategory::find($internalCatId);
+        if (! $internalCatCode && $internalCatId) {
+            $cat = InternalCategory::find($internalCatId);
             if ($cat) {
                 $internalCatCode = $cat->code;
             }
@@ -114,7 +118,7 @@ class ProductController extends Controller
         $user = $request->user();
 
         // End users (non-admin) must verify their password to edit an existing product
-        if (!$user || !$user->is_admin) {
+        if (! $user || ! $user->is_admin) {
             $password = $request->input('confirm_password') ?? $request->input('password');
             if (empty($password)) {
                 return response()->json([
@@ -125,7 +129,7 @@ class ProductController extends Controller
                 ], 422);
             }
 
-            if (!\Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+            if (! Hash::check($password, $user->password)) {
                 return response()->json([
                     'message' => 'Invalid password confirmation. Please enter your correct account password.',
                     'errors' => [
@@ -153,7 +157,7 @@ class ProductController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
-        if (!$user || !$user->is_admin) {
+        if (! $user || ! $user->is_admin) {
             return response()->json([
                 'message' => 'Unauthorized action. Only administrators can delete catalogue products.',
             ], 403);
@@ -197,7 +201,7 @@ class ProductController extends Controller
 
         $result = $this->exportImportService->importCsv($request->file('file'));
 
-        \App\Models\ActivityLog::record(
+        ActivityLog::record(
             'IMPORTED',
             "CSV bulk import: {$result['imported']} products added, {$result['updated']} products updated",
             'Product',
@@ -228,7 +232,7 @@ class ProductController extends Controller
         $originalName = $file->getClientOriginalName();
         $path = $file->store('tech_specs', 'public');
 
-        \App\Models\ActivityLog::record(
+        ActivityLog::record(
             'PDF_UPLOADED',
             "Uploaded technical specification PDF: {$originalName}",
             'Product',
@@ -241,7 +245,7 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'Technical specifications PDF uploaded successfully.',
             'file_path' => $path,
-            'file_url' => asset('storage/' . $path),
+            'file_url' => asset('storage/'.$path),
             'original_filename' => $originalName,
         ]);
     }

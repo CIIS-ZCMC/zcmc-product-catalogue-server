@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Category;
+use App\Models\Product;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -12,12 +14,12 @@ class DashboardController extends Controller
      */
     public function stats()
     {
-        $totalProducts = \App\Models\Product::count();
-        $totalCategories = \App\Models\Category::count();
-        $totalSegments = \App\Models\Category::roots()->count();
+        $totalProducts = Product::count();
+        $totalCategories = Category::count();
+        $totalSegments = Category::roots()->count();
 
         // Dynamically resolve category group distribution from product hierarchy
-        $productsWithCategories = \App\Models\Product::with('categoryRelation')->get();
+        $productsWithCategories = Product::with('categoryRelation')->get();
         $groupCounts = [];
         foreach ($productsWithCategories as $p) {
             $grp = $p->category_group ?: 'Uncategorized';
@@ -32,21 +34,21 @@ class DashboardController extends Controller
             ];
         }
 
-        $uomDistribution = \Illuminate\Support\Facades\DB::table('products')
-            ->select('uom', \Illuminate\Support\Facades\DB::raw('count(*) as count'))
+        $uomDistribution = DB::table('products')
+            ->select('uom', DB::raw('count(*) as count'))
             ->whereNotNull('uom')
             ->groupBy('uom')
             ->orderBy('count', 'desc')
             ->limit(8)
             ->get();
 
-        $recentProducts = \App\Models\Product::with('categoryRelation')
+        $recentProducts = Product::with('categoryRelation')
             ->orderBy('created_at', 'desc')
             ->limit(6)
             ->get();
 
         // Check uniform naming standard: comma count >= 1 and UPPERCASE
-        $compliantCount = \App\Models\Product::whereRaw('BINARY item_description = UPPER(item_description)')
+        $compliantCount = Product::whereRaw('BINARY item_description = UPPER(item_description)')
             ->where('item_description', 'like', '%,%')
             ->count();
 

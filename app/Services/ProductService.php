@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Product;
+use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\InternalCategory;
+use App\Models\Product;
+use App\Models\ProductPriceHistory;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -20,19 +22,19 @@ class ProductService
     {
         $query = Product::with(['categoryRelation', 'internalCategory']);
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->search($filters['search']);
         }
 
-        if (!empty($filters['category_key'])) {
+        if (! empty($filters['category_key'])) {
             $query->filterByCategory($filters['category_key']);
         }
 
-        if (!empty($filters['internal_category_id'])) {
+        if (! empty($filters['internal_category_id'])) {
             $query->where('internal_category_id', $filters['internal_category_id']);
         }
 
-        if (!empty($filters['uom']) && strtolower($filters['uom']) !== 'all') {
+        if (! empty($filters['uom']) && strtolower($filters['uom']) !== 'all') {
             $query->whereRaw('LOWER(uom) = ?', [strtolower($filters['uom'])]);
         }
 
@@ -58,7 +60,7 @@ class ProductService
         $prefix = "{$categoryCode}-{$internalCatCode}-";
         $escapedPrefix = str_replace(['%', '_'], ['\\%', '\\_'], $prefix);
 
-        $existingCodes = Product::where('erp_item_code', 'like', $escapedPrefix . '%')
+        $existingCodes = Product::where('erp_item_code', 'like', $escapedPrefix.'%')
             ->pluck('erp_item_code');
 
         $maxSeq = 0;
@@ -85,17 +87,17 @@ class ProductService
     {
         // Build standard item description from structured attributes if provided
         $builtDesc = Product::buildStandardName($data);
-        if (!empty($builtDesc)) {
+        if (! empty($builtDesc)) {
             $data['item_description'] = $builtDesc;
         } else {
             $data['item_description'] = strtoupper(trim($data['item_description'] ?? ''));
         }
 
         // Auto-derive UNSPSC code from category if not explicitly provided
-        $categoryCode = !empty($data['unspsc_code']) ? $data['unspsc_code'] : null;
-        if (!empty($data['category_key'])) {
+        $categoryCode = ! empty($data['unspsc_code']) ? $data['unspsc_code'] : null;
+        if (! empty($data['category_key'])) {
             $category = Category::find($data['category_key']);
-            if ($category && !empty($category->code)) {
+            if ($category && ! empty($category->code)) {
                 $data['unspsc_code'] = $category->code;
                 $categoryCode = $category->code;
             }
@@ -103,7 +105,7 @@ class ProductService
 
         // Resolve internal category code from relationship
         $internalCatCode = null;
-        if (!empty($data['internal_category_id'])) {
+        if (! empty($data['internal_category_id'])) {
             $internalCat = InternalCategory::find($data['internal_category_id']);
             if ($internalCat) {
                 $internalCatCode = $internalCat->code;
@@ -111,12 +113,12 @@ class ProductService
         }
 
         // Auto-generate unique ERP item code: [category->code]-[internal category code]-[seq starting at 01]
-        if (!empty($categoryCode) && !empty($internalCatCode)) {
+        if (! empty($categoryCode) && ! empty($internalCatCode)) {
             $data['erp_item_code'] = $this->generateNextErpCode($categoryCode, $internalCatCode);
         } elseif (empty($data['erp_item_code'])) {
             $prefix = 'ZCMC-';
-            $catCode = !empty($data['unspsc_code']) ? substr($data['unspsc_code'], 0, 4) : 'GEN';
-            $data['erp_item_code'] = $prefix . $catCode . '-' . strtoupper(substr(uniqid(), -6));
+            $catCode = ! empty($data['unspsc_code']) ? substr($data['unspsc_code'], 0, 4) : 'GEN';
+            $data['erp_item_code'] = $prefix.$catCode.'-'.strtoupper(substr(uniqid(), -6));
         }
 
         $data['unit_price'] = $data['unit_price'] ?? 0.00;
@@ -124,18 +126,18 @@ class ProductService
         $product = Product::create($data);
 
         // Record initial price entry in product_price_histories
-        \App\Models\ProductPriceHistory::create([
+        ProductPriceHistory::create([
             'product_id' => $product->id,
             'old_price' => null,
             'new_price' => (float) $product->unit_price,
             'price_change' => 0,
             'percentage_change' => 0,
-            'reason' => !empty($data['price_change_reason']) ? $data['price_change_reason'] : 'Initial catalogue price',
+            'reason' => ! empty($data['price_change_reason']) ? $data['price_change_reason'] : 'Initial catalogue price',
             'effective_date' => now(),
         ]);
 
         // Record Activity Log
-        \App\Models\ActivityLog::record(
+        ActivityLog::record(
             'CREATED',
             "Product added to catalogue: {$product->item_description} ({$product->erp_item_code})",
             'Product',
@@ -145,7 +147,7 @@ class ProductService
             $product->only([
                 'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
                 'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code',
-                'unspsc_code', 'category_key', 'internal_category_id', 'other_specs'
+                'unspsc_code', 'category_key', 'internal_category_id', 'other_specs',
             ])
         );
 
@@ -161,28 +163,28 @@ class ProductService
         $oldValues = $product->only([
             'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
             'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code',
-            'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path'
+            'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path',
         ]);
 
         // Build standard item description from structured attributes if provided
         $builtDesc = Product::buildStandardName($data);
-        if (!empty($builtDesc)) {
+        if (! empty($builtDesc)) {
             $data['item_description'] = $builtDesc;
         } elseif (isset($data['item_description'])) {
             $data['item_description'] = strtoupper(trim($data['item_description']));
         }
 
-        if (!empty($data['category_key']) && $data['category_key'] != $product->category_key) {
+        if (! empty($data['category_key']) && $data['category_key'] != $product->category_key) {
             if (empty($data['unspsc_code'])) {
                 $category = Category::find($data['category_key']);
-                if ($category && !empty($category->code)) {
+                if ($category && ! empty($category->code)) {
                     $data['unspsc_code'] = $category->code;
                 }
             }
         }
 
         // Protect ERP item code: do not allow user overwrite if it's already generated
-        if (isset($data['erp_item_code']) && !empty($product->erp_item_code)) {
+        if (isset($data['erp_item_code']) && ! empty($product->erp_item_code)) {
             unset($data['erp_item_code']);
         }
 
@@ -195,13 +197,13 @@ class ProductService
                 $change = $newPrice - $oldPrice;
                 $pct = $oldPrice > 0 ? round(($change / $oldPrice) * 100, 2) : 0;
 
-                \App\Models\ProductPriceHistory::create([
+                ProductPriceHistory::create([
                     'product_id' => $product->id,
                     'old_price' => $oldPrice,
                     'new_price' => $newPrice,
                     'price_change' => $change,
                     'percentage_change' => $pct,
-                    'reason' => !empty($data['price_change_reason']) ? $data['price_change_reason'] : 'Unit price adjustment / Inflation update',
+                    'reason' => ! empty($data['price_change_reason']) ? $data['price_change_reason'] : 'Unit price adjustment / Inflation update',
                     'effective_date' => now(),
                 ]);
             }
@@ -213,7 +215,7 @@ class ProductService
         $newValues = $fresh->only([
             'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
             'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code',
-            'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path'
+            'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path',
         ]);
 
         // Diff old and new values to capture only changed fields
@@ -226,8 +228,8 @@ class ProductService
             }
         }
 
-        if (!empty($changedNew)) {
-            \App\Models\ActivityLog::record(
+        if (! empty($changedNew)) {
+            ActivityLog::record(
                 'UPDATED',
                 "Product updated: {$fresh->item_description} ({$fresh->erp_item_code})",
                 'Product',
@@ -247,10 +249,10 @@ class ProductService
     public function deleteProduct(Product $product): bool
     {
         $snapshot = $product->only([
-            'id', 'erp_item_code', 'item_description', 'noun', 'bizbox_item_code', 'philgeps_code', 'uom'
+            'id', 'erp_item_code', 'item_description', 'noun', 'bizbox_item_code', 'philgeps_code', 'uom',
         ]);
 
-        \App\Models\ActivityLog::record(
+        ActivityLog::record(
             'DELETED',
             "Product deleted from catalogue: {$product->item_description} ({$product->erp_item_code})",
             'Product',

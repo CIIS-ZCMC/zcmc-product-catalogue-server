@@ -2,12 +2,12 @@
 
 namespace App\Jobs;
 
-use App\Models\User;
 use App\Mail\WelcomeMail;
+use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SendWelcomeEmailJob implements ShouldQueue
 {
@@ -40,7 +40,7 @@ class SendWelcomeEmailJob implements ShouldQueue
             Mail::to($this->user->email)->send(new WelcomeMail($this->user));
             Log::info("Welcome email sent successfully to {$this->user->email}");
         } catch (\Throwable $e) {
-            Log::error("Failed to send welcome email to {$this->user->email}: " . $e->getMessage());
+            Log::error("Failed to send welcome email to {$this->user->email}: ".$e->getMessage());
             throw $e;
         }
     }

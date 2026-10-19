@@ -19,7 +19,7 @@ class CategoryService
     {
         $query = Category::query();
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->search($filters['search']);
         }
 
@@ -30,7 +30,7 @@ class CategoryService
             } else {
                 $query->where('parent_key', $parentKey);
             }
-        } elseif (!empty($filters['roots_only'])) {
+        } elseif (! empty($filters['roots_only'])) {
             $query->whereNull('parent_key');
         }
 
@@ -84,7 +84,7 @@ class CategoryService
     {
         $query = Category::where('level', 3);
 
-        if (!empty($term)) {
+        if (! empty($term)) {
             $query->search($term);
         } else {
             // Curated initial suggestions for hospital procurement
@@ -139,7 +139,7 @@ class CategoryService
                             'code' => $cat->code,
                             'title' => $cat->title,
                             'level' => 3,
-                        ]
+                        ],
                     ]),
                 ];
             })

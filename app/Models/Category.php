@@ -2,12 +2,30 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property Category|null $parent
+ * @property Collection<int, Category> $children
+ * @property Collection<int, Product> $products
+ * @property int|null $children_count
+ * @property int|null $products_count
+ * @property string $title
+ * @property string $code
+ * @property int $key
+ * @property int $level
+ * @property string $path
+ * @property string $full_path
+ */
 class Category extends Model
 {
     protected $primaryKey = 'key';
+
     public $incrementing = false;
+
     protected $keyType = 'int';
 
     protected $fillable = [
@@ -26,11 +44,11 @@ class Category extends Model
     protected static function booted()
     {
         static::saving(function ($category) {
-            if (!empty($category->parent_key)) {
+            if (! empty($category->parent_key)) {
                 $parent = self::find($category->parent_key);
                 if ($parent) {
                     $category->level = $parent->level + 1;
-                    $category->path = ($parent->path ?: "/{$parent->key}/") . "{$category->key}/";
+                    $category->path = ($parent->path ?: "/{$parent->key}/")."{$category->key}/";
                 } else {
                     $category->level = 1;
                     $category->path = "/{$category->key}/";
@@ -48,39 +66,48 @@ class Category extends Model
     public function getAllDescendantKeys(): array
     {
         $path = $this->path ?: "/{$this->key}/";
-        return self::where('path', 'like', $path . '%')
+
+        return self::where('path', 'like', $path.'%')
             ->pluck('key')
             ->toArray();
     }
 
     /**
      * Parent category relationship.
+     *
+     * @return BelongsTo<Category, $this>
      */
-    public function parent()
+    public function parent(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'parent_key', 'key');
     }
 
     /**
      * Immediate child categories.
+     *
+     * @return HasMany<Category, $this>
      */
-    public function children()
+    public function children(): HasMany
     {
         return $this->hasMany(Category::class, 'parent_key', 'key')->orderBy('title');
     }
 
     /**
      * Recursive children tree.
+     *
+     * @return HasMany<Category, $this>
      */
-    public function childrenRecursive()
+    public function childrenRecursive(): HasMany
     {
         return $this->children()->with('childrenRecursive');
     }
 
     /**
      * Products belonging directly to this category.
+     *
+     * @return HasMany<Product, $this>
      */
-    public function products()
+    public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'category_key', 'key');
     }
@@ -104,8 +131,8 @@ class Category extends Model
 
         return $query->where(function ($q) use ($term) {
             $q->where('title', 'like', "%{$term}%")
-              ->orWhere('code', 'like', "%{$term}%")
-              ->orWhere('key', 'like', "%{$term}%");
+                ->orWhere('code', 'like', "%{$term}%")
+                ->orWhere('key', 'like', "%{$term}%");
         });
     }
 
@@ -131,6 +158,7 @@ class Category extends Model
                 ]);
                 $current = $current->parent;
             }
+
             return $ancestors;
         }
 
@@ -152,7 +180,7 @@ class Category extends Model
             }
         }
 
-        if (!empty($missingKeys)) {
+        if (! empty($missingKeys)) {
             $fetched = self::whereIn('key', $missingKeys)->get();
             foreach ($fetched as $cat) {
                 $item = [

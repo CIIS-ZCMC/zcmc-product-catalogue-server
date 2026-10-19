@@ -2,8 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property Category|null $categoryRelation
+ * @property InternalCategory|null $internalCategory
+ * @property Collection<int, ProductPriceHistory> $priceHistories
+ */
 class Product extends Model
 {
     protected $fillable = [
@@ -55,24 +63,30 @@ class Product extends Model
 
     /**
      * Associated UNSPSC / Catalogue Category.
+     *
+     * @return BelongsTo<Category, $this>
      */
-    public function categoryRelation()
+    public function categoryRelation(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_key', 'key');
     }
 
     /**
      * Associated Internal Institution Category.
+     *
+     * @return BelongsTo<InternalCategory, $this>
      */
-    public function internalCategory()
+    public function internalCategory(): BelongsTo
     {
         return $this->belongsTo(InternalCategory::class, 'internal_category_id');
     }
 
     /**
      * Unit price change history tracking (inflation & price movements over time).
+     *
+     * @return HasMany<ProductPriceHistory, $this>
      */
-    public function priceHistories()
+    public function priceHistories(): HasMany
     {
         return $this->hasMany(ProductPriceHistory::class)->orderBy('effective_date', 'desc');
     }
@@ -88,24 +102,24 @@ class Product extends Model
 
         return $query->where(function ($q) use ($term) {
             $q->where('item_description', 'like', "%{$term}%")
-              ->orWhere('noun', 'like', "%{$term}%")
-              ->orWhere('type', 'like', "%{$term}%")
-              ->orWhere('material_composition', 'like', "%{$term}%")
-              ->orWhere('key_attributes', 'like', "%{$term}%")
-              ->orWhere('size', 'like', "%{$term}%")
-              ->orWhere('other_specs', 'like', "%{$term}%")
-              ->orWhere('erp_item_code', 'like', "%{$term}%")
-              ->orWhere('bizbox_item_code', 'like', "%{$term}%")
-              ->orWhere('philgeps_code', 'like', "%{$term}%")
-              ->orWhere('unspsc_code', 'like', "%{$term}%")
-              ->orWhereHas('categoryRelation', function ($catQ) use ($term) {
-                  $catQ->where('title', 'like', "%{$term}%")
-                       ->orWhere('code', 'like', "%{$term}%");
-              })
-              ->orWhereHas('internalCategory', function ($intQ) use ($term) {
-                  $intQ->where('name', 'like', "%{$term}%")
-                       ->orWhere('code', 'like', "%{$term}%");
-              });
+                ->orWhere('noun', 'like', "%{$term}%")
+                ->orWhere('type', 'like', "%{$term}%")
+                ->orWhere('material_composition', 'like', "%{$term}%")
+                ->orWhere('key_attributes', 'like', "%{$term}%")
+                ->orWhere('size', 'like', "%{$term}%")
+                ->orWhere('other_specs', 'like', "%{$term}%")
+                ->orWhere('erp_item_code', 'like', "%{$term}%")
+                ->orWhere('bizbox_item_code', 'like', "%{$term}%")
+                ->orWhere('philgeps_code', 'like', "%{$term}%")
+                ->orWhere('unspsc_code', 'like', "%{$term}%")
+                ->orWhereHas('categoryRelation', function ($catQ) use ($term) {
+                    $catQ->where('title', 'like', "%{$term}%")
+                        ->orWhere('code', 'like', "%{$term}%");
+                })
+                ->orWhereHas('internalCategory', function ($intQ) use ($term) {
+                    $intQ->where('name', 'like', "%{$term}%")
+                        ->orWhere('code', 'like', "%{$term}%");
+                });
         });
     }
 
@@ -124,10 +138,11 @@ class Product extends Model
      */
     public function getTechSpecsPdfUrlAttribute(): ?string
     {
-        if (!$this->tech_specs_pdf_path) {
+        if (! $this->tech_specs_pdf_path) {
             return null;
         }
-        return asset('storage/' . $this->tech_specs_pdf_path);
+
+        return asset('storage/'.$this->tech_specs_pdf_path);
     }
 
     /**
@@ -144,7 +159,8 @@ class Product extends Model
     public function getCategoryGroupAttribute(): ?string
     {
         $hierarchy = $this->category_hierarchy;
-        return !empty($hierarchy) ? $hierarchy[0]['title'] : null;
+
+        return ! empty($hierarchy) ? $hierarchy[0]['title'] : null;
     }
 
     /**
@@ -159,7 +175,8 @@ class Product extends Model
         } elseif ($count === 2) {
             return $hierarchy[1]['title'] ?? null;
         }
-        return !empty($hierarchy) ? $hierarchy[0]['title'] : null;
+
+        return ! empty($hierarchy) ? $hierarchy[0]['title'] : null;
     }
 
     /**
@@ -175,7 +192,7 @@ class Product extends Model
      */
     public function getCategoryHierarchyAttribute(): array
     {
-        if (!$this->categoryRelation) {
+        if (! $this->categoryRelation) {
             return [];
         }
 
@@ -209,9 +226,10 @@ class Product extends Model
             return $query;
         }
 
-        $category = \App\Models\Category::find($categoryKey);
+        $category = Category::find($categoryKey);
         if ($category) {
             $descendantKeys = $category->getAllDescendantKeys();
+
             return $query->whereIn('category_key', $descendantKeys);
         }
 

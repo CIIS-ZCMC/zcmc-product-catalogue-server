@@ -19,7 +19,7 @@ class InternalCategorySeeder extends Seeder
             $header = fgetcsv($handle); // name,code
 
             while (($row = fgetcsv($handle)) !== false) {
-                if (count($row) >= 2 && !empty($row[0]) && !empty($row[1])) {
+                if (count($row) >= 2 && ! empty($row[0]) && ! empty($row[1])) {
                     $name = trim($row[0]);
                     $code = trim($row[1]);
 
