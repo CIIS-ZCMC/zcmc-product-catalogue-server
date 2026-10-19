@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  verify:
-    name: Verify Code & Tests
+  lint:
+    name: 1. Lint & Type Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -18,7 +18,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo, sqlite3, pdo_sqlite, bcmath, zip, pcntl
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, sqlite3, pdo_sqlite
           coverage: none
 
       - name: Validate composer.json
@@ -44,19 +44,55 @@ jobs:
       - name: Run Type Check
         run: composer typecheck
 
-      - name: Run Tests
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ':memory:'
+  ci:
+    name: 2. Automated Tests
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, sqlite3, pdo_sqlite, bcmath, zip, pcntl
+          coverage: none
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Prepare Environment
         run: |
           cp .env.example .env
           php artisan key:generate
-          php artisan migrate --force
-          composer test
+
+      - name: Run Database Migrations
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+        run: php artisan migrate --force
+
+      - name: Execute Tests
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+        run: composer test
 
   build:
-    name: Build & Publish FrankenPHP Image
-    needs: [verify]
+    name: 3. Build & Publish FrankenPHP Image
+    needs: [ci]
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -12,6 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
+            // Drop index first (prevents SQLite error on column drop)
+            $table->dropIndex(['internal_category_code']);
+
             // Drop removed columns
             $table->dropColumn(['internal_category_code', 'generic_name', 'brand', 'remarks']);
 
