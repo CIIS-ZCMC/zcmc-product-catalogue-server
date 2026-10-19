@@ -2,7 +2,7 @@
     <div style="background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%); padding: 24px; border-radius: 8px; text-align: center; color: #ffffff;">
         <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9;">Republic of the Philippines &bull; DOH</div>
         <h2 style="margin: 6px 0 0 0; font-size: 20px; font-weight: 800;">Zamboanga City Medical Center</h2>
-        <div style="font-size: 13px; opacity: 0.85; margin-top: 4px;">Procurement Management Unit &bull; Catalogue Portal</div>
+        <div style="font-size: 13px; opacity: 0.85; margin-top: 4px;">Product Catalogue Portal</div>
     </div>
     <div style="padding: 24px 8px 8px 8px; color: #334155; line-height: 1.6;">
         <h3 style="color: #0f172a; margin-top: 0;">Welcome, {{ $user->name ?: ($user->first_name . ' ' . $user->last_name) }}!</h3>
@@ -16,7 +16,7 @@
                 <li>Track Unit Price Histories & Technical PDF Specs</li>
             </ul>
         </div>
-        <p style="font-size: 14px; color: #64748b;">If you did not authorize this registration, please immediately inform the ZCMC Procurement IT department.</p>
+        <p style="font-size: 14px; color: #64748b;">If you did not authorize this registration, please immediately inform the Integrated Management Information System Section (IMISS).</p>
     </div>
     <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
         &copy; {{ date('Y') }} Zamboanga City Medical Center. All rights reserved.
