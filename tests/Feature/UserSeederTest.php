@@ -17,9 +17,9 @@ class UserSeederTest extends TestCase
         $this->seed(UserSeeder::class);
 
         $this->assertSame(2, User::count());
-        $this->assertTrue(User::where('email', 'admin@zcmc.gov.ph')->firstOrFail()->is_admin);
+        $this->assertTrue(User::where('email', 'admin@zcmc.com')->firstOrFail()->is_admin);
 
-        $encoder = User::where('email', 'encoder.office@zcmc.gov.ph')->firstOrFail();
+        $encoder = User::where('email', 'encoder.office@zcmc.com')->firstOrFail();
         $this->assertFalse($encoder->is_admin);
         $this->assertSame(['OF-SUP'], $encoder->internalCategories->pluck('code')->all());
 

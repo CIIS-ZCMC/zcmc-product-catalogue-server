@@ -194,6 +194,7 @@ class ProductService
             if (abs($oldPrice - $newPrice) > 0.001) {
                 $change = $newPrice - $oldPrice;
                 $pct = $oldPrice > 0 ? round(($change / $oldPrice) * 100, 2) : 0;
+                $reason = !empty($data['price_change_reason']) ? $data['price_change_reason'] : 'Unit price adjustment / Inflation update';
 
                 \App\Models\ProductPriceHistory::create([
                     'product_id' => $product->id,
@@ -201,9 +202,27 @@ class ProductService
                     'new_price' => $newPrice,
                     'price_change' => $change,
                     'percentage_change' => $pct,
-                    'reason' => !empty($data['price_change_reason']) ? $data['price_change_reason'] : 'Unit price adjustment / Inflation update',
+                    'reason' => $reason,
                     'effective_date' => now(),
                 ]);
+
+                $desc = $data['item_description'] ?? $product->item_description;
+                \App\Models\ActivityLog::record(
+                    'PRICE_UPDATED',
+                    "Price updated for {$desc} ({$product->erp_item_code}): PHP " . number_format($oldPrice, 2) . " to PHP " . number_format($newPrice, 2) . " ({$reason})",
+                    'Product',
+                    $product->id,
+                    $product->erp_item_code,
+                    [
+                        'unit_price' => $oldPrice,
+                    ],
+                    [
+                        'unit_price' => $newPrice,
+                        'price_change' => $change,
+                        'percentage_change' => $pct,
+                        'reason' => $reason,
+                    ]
+                );
             }
         }
 

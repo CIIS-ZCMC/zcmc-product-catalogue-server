@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            // Drop removed columns
+            // Drop removed columns and associated indexes
+            $table->dropIndex(['internal_category_code']);
             $table->dropColumn(['internal_category_code', 'generic_name', 'brand', 'remarks']);
 
             // Rename specifications to other_specs

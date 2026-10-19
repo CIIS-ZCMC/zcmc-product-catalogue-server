@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@zcmc.gov.ph'],
+            ['email' => 'admin@zcmc.com'],
             [
                 'first_name' => 'ZCMC',
                 'last_name' => 'Admin',
@@ -25,7 +25,7 @@ class UserSeeder extends Seeder
         );
 
         $encoder = User::updateOrCreate(
-            ['email' => 'encoder.office@zcmc.gov.ph'],
+            ['email' => 'encoder.office@zcmc.com'],
             [
                 'first_name' => 'Office Supply',
                 'last_name' => 'Encoder',
