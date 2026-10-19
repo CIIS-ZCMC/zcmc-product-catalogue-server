@@ -17,8 +17,10 @@ class WelcomeMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public \App\Models\User $user)
-    {
+    public function __construct(
+        public \App\Models\User $user,
+        public ?string $initialPassword = null
+    ) {
     }
 
     /**
@@ -38,6 +40,10 @@ class WelcomeMail extends Mailable
     {
         return new Content(
             view: 'emails.welcome',
+            with: [
+                'user' => $this->user,
+                'initialPassword' => $this->initialPassword,
+            ],
         );
     }
 

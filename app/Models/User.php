@@ -26,6 +26,7 @@ class User extends Authenticatable
         'password',
         'is_admin',
         'is_active',
+        'must_change_password',
     ];
 
     /**
@@ -95,6 +96,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
         ];
     }
 }

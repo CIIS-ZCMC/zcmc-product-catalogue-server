@@ -68,15 +68,19 @@ class UserController extends Controller
     public function store(UserRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $plainPassword = !empty($data['password'])
+            ? $data['password']
+            : $this->generateInitialPassword();
 
-        $user = DB::transaction(function () use ($data) {
+        $user = DB::transaction(function () use ($data, $plainPassword) {
             $user = User::create([
                 'first_name' => trim($data['first_name']),
                 'last_name' => trim($data['last_name']),
                 'email' => $data['email'],
-                'password' => $data['password'],
+                'password' => $plainPassword,
                 'is_admin' => $data['is_admin'],
                 'is_active' => $data['is_active'] ?? true,
+                'must_change_password' => true,
             ]);
 
             $user->internalCategories()->sync($data['internal_category_ids'] ?? []);
@@ -96,7 +100,7 @@ class UserController extends Controller
             $this->auditSnapshot($user)
         );
 
-        SendWelcomeEmailJob::dispatch($user);
+        SendWelcomeEmailJob::dispatch($user, $plainPassword);
 
         return response()->json(['data' => (new UserResource($user))->resolve()], 201);
     }
@@ -254,7 +258,35 @@ class UserController extends Controller
             'email' => $user->email,
             'is_admin' => (bool) $user->is_admin,
             'is_active' => (bool) $user->is_active,
+            'must_change_password' => (bool) $user->must_change_password,
             'internal_category_ids' => $user->internalCategories->pluck('id')->sort()->values()->all(),
         ];
+    }
+
+    /**
+     * Generate an initial password compliant with security rules (at least 12 chars, letters, digits, symbols).
+     */
+    private function generateInitialPassword(): string
+    {
+        $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $lower = 'abcdefghjkmnpqrstuvwxyz';
+        $digits = '23456789';
+        $symbols = '@#$%&*!';
+        $all = $upper . $lower . $digits . $symbols;
+
+        $pwd = [
+            $upper[random_int(0, strlen($upper) - 1)],
+            $lower[random_int(0, strlen($lower) - 1)],
+            $digits[random_int(0, strlen($digits) - 1)],
+            $symbols[random_int(0, strlen($symbols) - 1)],
+        ];
+
+        for ($i = 0; $i < 8; $i++) {
+            $pwd[] = $all[random_int(0, strlen($all) - 1)];
+        }
+
+        shuffle($pwd);
+
+        return implode('', $pwd);
     }
 }

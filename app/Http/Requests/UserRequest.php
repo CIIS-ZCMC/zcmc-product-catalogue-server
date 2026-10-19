@@ -34,7 +34,7 @@ class UserRequest extends FormRequest
             : (bool) $existing?->is_admin;
 
         $password = [
-            $isCreate ? 'required' : 'nullable',
+            'nullable',
             'string',
             'confirmed',
             Password::min(8)->numbers()->symbols(),

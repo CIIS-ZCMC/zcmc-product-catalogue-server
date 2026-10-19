@@ -14,8 +14,24 @@ class ActivityLogController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         $query = ActivityLog::with('user:id,first_name,last_name,email,is_admin')
             ->latest('id');
+
+        // Non-admin (end user) only sees logs involving them (action performed by them or on their account)
+        if ($user && !$user->is_admin) {
+            $query->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('user_email', $user->email)
+                  ->orWhere(function ($sub) use ($user) {
+                      $sub->where('entity_type', 'User')
+                          ->where('entity_id', $user->id);
+                  });
+            });
+        } elseif ($user && $user->is_admin && $request->filled('user_id')) {
+            $query->where('user_id', $request->query('user_id'));
+        }
 
         // Filter by action (e.g. CREATED, UPDATED, DELETED, IMPORTED, PDF_UPLOADED)
         if ($request->filled('action')) {

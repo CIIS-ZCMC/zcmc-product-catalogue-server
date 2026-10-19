@@ -26,8 +26,10 @@ class SendWelcomeEmailJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(public User $user)
-    {
+    public function __construct(
+        public User $user,
+        public ?string $initialPassword = null
+    ) {
         $this->onQueue('email');
     }
 
@@ -37,7 +39,7 @@ class SendWelcomeEmailJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            Mail::to($this->user->email)->send(new WelcomeMail($this->user));
+            Mail::to($this->user->email)->send(new WelcomeMail($this->user, $this->initialPassword));
             Log::info("Welcome email sent successfully to {$this->user->email}");
         } catch (\Throwable $e) {
             Log::error("Failed to send welcome email to {$this->user->email}: " . $e->getMessage());

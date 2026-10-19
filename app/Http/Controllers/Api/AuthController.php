@@ -179,6 +179,73 @@ class AuthController extends Controller
     }
 
     /**
+     * Change authenticated user's password (e.g. on first-time login or profile update).
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $rules = [
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Password::min(8)
+                    ->numbers()
+                    ->symbols(),
+            ],
+        ];
+
+        // Require current_password only if user is not in mandatory first-time setup
+        if (!$user->must_change_password || $request->filled('current_password')) {
+            $rules['current_password'] = 'required|string';
+            $rules['password'][] = 'different:current_password';
+        }
+
+        $validated = $request->validate($rules, [
+            'password.different' => 'Your new password cannot be the same as your current password.',
+        ]);
+
+        if (isset($validated['current_password'])) {
+            if (!Hash::check($validated['current_password'], $user->password)) {
+                return response()->json([
+                    'message' => 'The provided current password does not match our records.',
+                    'errors' => [
+                        'current_password' => ['The provided current password does not match our records.'],
+                    ],
+                ], 422);
+            }
+        }
+
+        // Prevent setting the exact same password as the current / initial password
+        if (Hash::check($validated['password'], $user->password)) {
+            return response()->json([
+                'message' => 'Your new permanent password cannot be the same as your initial temporary password.',
+                'errors' => [
+                    'password' => ['Your new permanent password cannot be the same as your initial temporary password.'],
+                ],
+            ], 422);
+        }
+
+        $user->password = $validated['password'];
+        $user->must_change_password = false;
+        $user->save();
+
+        \App\Models\ActivityLog::record(
+            'PASSWORD_CHANGED',
+            "User changed password: {$user->name} ({$user->email})",
+            'User',
+            $user->id,
+            $user->email
+        );
+
+        return response()->json([
+            'message' => 'Your password has been changed successfully.',
+            'user' => (new UserResource($user->loadMissing('internalCategories')))->resolve(),
+        ]);
+    }
+
+    /**
      * Retrieve authenticated user profile.
      */
     public function me(Request $request): JsonResponse

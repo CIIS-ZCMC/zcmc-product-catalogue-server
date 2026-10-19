@@ -27,6 +27,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'is_admin' => (bool) $this->is_admin,
             'is_active' => (bool) $this->is_active,
+            'must_change_password' => (bool) $this->must_change_password,
             'internal_category_ids' => $categories->pluck('id')->values()->all(),
             'internal_categories' => $categories
                 ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'code' => $c->code])
