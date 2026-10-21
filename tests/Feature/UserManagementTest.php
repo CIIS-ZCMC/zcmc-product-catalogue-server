@@ -287,10 +287,35 @@ class UserManagementTest extends TestCase
         $this->putJson("/api/products/{$mine->id}", $this->productPayload($this->medical, $confirm))->assertStatus(403);
         // 403 takes precedence over a missing password confirmation.
         $this->putJson("/api/products/{$theirs->id}", $this->productPayload($this->medical))->assertStatus(403);
-        // Allowed.
-        $this->putJson("/api/products/{$mine->id}", $this->productPayload($this->office, $confirm + ['unit_price' => 20]))->assertOk();
-        // Still must confirm password.
+        // Allowed when toggle is false (default: no password required).
+        \App\Models\SystemSetting::set('require_password_on_edit', false);
+        $this->putJson("/api/products/{$mine->id}", $this->productPayload($this->office))->assertOk();
+
+        // When toggle is enabled by admin: password confirmation is required.
+        \App\Models\SystemSetting::set('require_password_on_edit', true);
         $this->putJson("/api/products/{$mine->id}", $this->productPayload($this->office))->assertStatus(422);
+        $this->putJson("/api/products/{$mine->id}", $this->productPayload($this->office, $confirm + ['unit_price' => 20]))->assertOk();
+    }
+
+    public function test_system_settings_endpoints(): void
+    {
+        $encoder = $this->encoder([$this->office]);
+        $admin = $this->admin();
+
+        // Encoder can read settings.
+        Sanctum::actingAs($encoder);
+        $this->getJson('/api/settings')->assertOk()->assertJsonStructure(['require_password_on_edit']);
+
+        // Encoder cannot update settings.
+        $this->putJson('/api/settings', ['require_password_on_edit' => true])->assertStatus(403);
+
+        // Admin can update settings.
+        Sanctum::actingAs($admin);
+        $this->putJson('/api/settings', ['require_password_on_edit' => true])
+            ->assertOk()
+            ->assertJsonPath('settings.require_password_on_edit', true);
+
+        $this->assertTrue(\App\Models\SystemSetting::getBool('require_password_on_edit'));
     }
 
     public function test_admin_writes_any_category_and_only_admin_deletes(): void

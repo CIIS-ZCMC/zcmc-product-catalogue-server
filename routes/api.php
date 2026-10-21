@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\ItemUnitController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\SettingController;
 
 // Public Authentication Endpoints
 // Public registration is disabled: accounts are created by administrators via POST /users
@@ -77,6 +78,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/users/{id}', [UserController::class, 'update']);
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
     });
+
+    // Application & Security Settings
+    Route::get('/settings', [SettingController::class, 'index']);
+    Route::middleware('admin')->put('/settings', [SettingController::class, 'update']);
 
     // Activity / Audit Logs
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);

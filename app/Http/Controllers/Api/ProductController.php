@@ -129,8 +129,10 @@ class ProductController extends Controller
             return $denied;
         }
 
-        // End users (non-admin) must verify their password to edit an existing product
-        if (!$user || !$user->is_admin) {
+        // Password confirmation requirement on edit is toggleable by administrators
+        $requirePassword = \App\Models\SystemSetting::getBool('require_password_on_edit', false);
+
+        if ($requirePassword && (!$user || !$user->is_admin)) {
             $password = $request->input('confirm_password') ?? $request->input('password');
             if (empty($password)) {
                 return response()->json([
