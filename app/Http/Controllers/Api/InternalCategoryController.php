@@ -14,7 +14,7 @@ class InternalCategoryController extends Controller
      */
     public function index(): JsonResponse
     {
-        $categories = InternalCategory::orderBy('name', 'asc')->get();
+        $categories = InternalCategory::withCount('products')->orderBy('name', 'asc')->get();
 
         return response()->json([
             'data' => $categories,
