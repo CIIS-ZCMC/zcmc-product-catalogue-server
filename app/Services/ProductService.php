@@ -144,7 +144,7 @@ class ProductService
             null,
             $product->only([
                 'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
-                'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code',
+                'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code', 'stock_card_number',
                 'unspsc_code', 'category_key', 'internal_category_id', 'other_specs'
             ])
         );
@@ -160,7 +160,7 @@ class ProductService
         // Snapshot old values before update
         $oldValues = $product->only([
             'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
-            'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code',
+            'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code', 'stock_card_number',
             'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path'
         ]);
 
@@ -231,7 +231,7 @@ class ProductService
 
         $newValues = $fresh->only([
             'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
-            'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code',
+            'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code', 'stock_card_number',
             'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path'
         ]);
 
@@ -266,7 +266,7 @@ class ProductService
     public function deleteProduct(Product $product): bool
     {
         $snapshot = $product->only([
-            'id', 'erp_item_code', 'item_description', 'noun', 'bizbox_item_code', 'philgeps_code', 'uom'
+            'id', 'erp_item_code', 'item_description', 'noun', 'bizbox_item_code', 'philgeps_code', 'stock_card_number', 'uom'
         ]);
 
         \App\Models\ActivityLog::record(

@@ -12,6 +12,7 @@ class Product extends Model
         'erp_item_code',
         'bizbox_item_code',
         'philgeps_code',
+        'stock_card_number',
         'unspsc_code',
         'noun',
         'type',
@@ -97,6 +98,7 @@ class Product extends Model
               ->orWhere('erp_item_code', 'like', "%{$term}%")
               ->orWhere('bizbox_item_code', 'like', "%{$term}%")
               ->orWhere('philgeps_code', 'like', "%{$term}%")
+              ->orWhere('stock_card_number', 'like', "%{$term}%")
               ->orWhere('unspsc_code', 'like', "%{$term}%")
               ->orWhereHas('categoryRelation', function ($catQ) use ($term) {
                   $catQ->where('title', 'like', "%{$term}%")

@@ -26,6 +26,7 @@ class StoreProductRequest extends FormRequest
             'internal_category_id' => 'required|exists:internal_categories,id',
             'bizbox_item_code' => 'required|string|max:100',
             'philgeps_code' => 'nullable|string|max:100',
+            'stock_card_number' => 'nullable|string|max:100',
             'erp_item_code' => 'nullable|string|max:100|unique:products,erp_item_code',
             'unspsc_code' => 'nullable|string|max:50',
             'uom' => 'required|string|max:50',
