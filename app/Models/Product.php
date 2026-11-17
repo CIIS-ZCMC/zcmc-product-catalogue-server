@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property Category|null $categoryRelation
@@ -144,7 +145,11 @@ class Product extends Model
             return null;
         }
 
-        return asset('storage/'.$this->tech_specs_pdf_path);
+        if (str_starts_with($this->tech_specs_pdf_path, 'http://') || str_starts_with($this->tech_specs_pdf_path, 'https://')) {
+            return $this->tech_specs_pdf_path;
+        }
+
+        return Storage::disk(config('filesystems.default', 's3'))->url($this->tech_specs_pdf_path);
     }
 
     /**

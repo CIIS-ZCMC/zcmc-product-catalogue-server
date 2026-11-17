@@ -17,6 +17,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -271,7 +272,8 @@ class ProductController extends Controller
 
         $file = $request->file('file');
         $originalName = $file->getClientOriginalName();
-        $path = $file->store('tech_specs', 'public');
+        $disk = config('filesystems.default', 's3');
+        $path = $file->store('tech_specs', $disk);
 
         ActivityLog::record(
             'PDF_UPLOADED',
@@ -286,7 +288,7 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'Technical specifications PDF uploaded successfully.',
             'file_path' => $path,
-            'file_url' => asset('storage/'.$path),
+            'file_url' => Storage::disk($disk)->url($path),
             'original_filename' => $originalName,
         ]);
     }
