@@ -49,6 +49,8 @@ class User extends Authenticatable
 
     /**
      * Internal categories an encoder may create and edit products in.
+     *
+     * @return BelongsToMany<InternalCategory, $this>
      */
     public function internalCategories(): BelongsToMany
     {

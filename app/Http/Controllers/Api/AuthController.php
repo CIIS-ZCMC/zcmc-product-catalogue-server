@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
+use App\Jobs\SendPasswordResetOtpJob;
+use App\Jobs\SendWelcomeEmailJob;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,7 +41,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             return response()->json([
                 'message' => 'Your account has been deactivated. Please contact an administrator.',
             ], 403);
@@ -50,15 +54,7 @@ class AuthController extends Controller
             'message' => 'Login successful.',
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => [
-                'id' => $user->id,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_admin' => (bool) $user->is_admin,
-                'created_at' => $user->created_at,
-            ],
+            'user' => (new UserResource($user->loadMissing('internalCategories')))->resolve(),
         ]);
     }
 
@@ -68,7 +64,7 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         // Support either first_name/last_name or combined name input
-        if (!$request->filled('first_name') && $request->filled('name')) {
+        if (! $request->filled('first_name') && $request->filled('name')) {
             $parts = explode(' ', trim($request->input('name')), 2);
             $request->merge([
                 'first_name' => $parts[0] ?: 'User',
@@ -109,7 +105,7 @@ class AuthController extends Controller
         ]);
 
         // Dispatch Welcome Email asynchronously via queued job
-        \App\Jobs\SendWelcomeEmailJob::dispatch($user);
+        SendWelcomeEmailJob::dispatch($user);
 
         // Generate Sanctum access token for immediate authentication
         $token = $user->createToken('zcmc_catalogue_token')->plainTextToken;
@@ -271,7 +267,7 @@ class AuthController extends Controller
         ];
 
         // Require current_password only if user is not in mandatory first-time setup
-        if (!$user->must_change_password || $request->filled('current_password')) {
+        if (! $user->must_change_password || $request->filled('current_password')) {
             $rules['current_password'] = 'required|string';
             $rules['password'][] = 'different:current_password';
         }
@@ -281,7 +277,7 @@ class AuthController extends Controller
         ]);
 
         if (isset($validated['current_password'])) {
-            if (!Hash::check($validated['current_password'], $user->password)) {
+            if (! Hash::check($validated['current_password'], $user->password)) {
                 return response()->json([
                     'message' => 'The provided current password does not match our records.',
                     'errors' => [
@@ -305,7 +301,7 @@ class AuthController extends Controller
         $user->must_change_password = false;
         $user->save();
 
-        \App\Models\ActivityLog::record(
+        ActivityLog::record(
             'PASSWORD_CHANGED',
             "User changed password: {$user->name} ({$user->email})",
             'User',

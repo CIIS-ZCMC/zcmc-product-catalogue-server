@@ -28,12 +28,12 @@ class UserController extends Controller
 
         if ($request->filled('search')) {
             $s = trim((string) $request->input('search'));
-            $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $s) . '%';
+            $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $s).'%';
             $query->where(function ($q) use ($like) {
                 $q->where('first_name', 'like', $like)
                     ->orWhere('last_name', 'like', $like)
                     ->orWhere('email', 'like', $like)
-                    ->orWhereRaw($this->fullNameSql() . ' like ?', [$like]);
+                    ->orWhereRaw($this->fullNameSql().' like ?', [$like]);
             });
         }
 
@@ -68,7 +68,7 @@ class UserController extends Controller
     public function store(UserRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $plainPassword = !empty($data['password'])
+        $plainPassword = ! empty($data['password'])
             ? $data['password']
             : $this->generateInitialPassword();
 
@@ -123,7 +123,7 @@ class UserController extends Controller
             $isActive = array_key_exists('is_active', $data) ? (bool) $data['is_active'] : (bool) $user->is_active;
 
             // Only an active administrator can lose admin access, and the caller is always one.
-            if ($user->is_admin && $user->is_active && (!$isAdmin || !$isActive)) {
+            if ($user->is_admin && $user->is_active && (! $isAdmin || ! $isActive)) {
                 if ($request->user()->id === $user->id) {
                     return $this->refusal('You cannot demote or deactivate your own account.');
                 }
@@ -139,7 +139,7 @@ class UserController extends Controller
                 'is_admin' => $isAdmin,
                 'is_active' => $isActive,
             ];
-            if (!empty($data['password'])) {
+            if (! empty($data['password'])) {
                 $attributes['password'] = $data['password'];
             }
 
@@ -150,7 +150,7 @@ class UserController extends Controller
             }
 
             // A deactivated account must lose access immediately, not at token expiry.
-            if (!$isActive) {
+            if (! $isActive) {
                 $user->tokens()->delete();
             }
 
@@ -172,11 +172,11 @@ class UserController extends Controller
                 $changedNew[$key] = $value;
             }
         }
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $changedNew['password'] = '[CHANGED]';
         }
 
-        if (!empty($changedNew)) {
+        if (! empty($changedNew)) {
             ActivityLog::record(
                 'UPDATED',
                 "User account updated: {$user->name} ({$user->email})",
@@ -236,7 +236,7 @@ class UserController extends Controller
 
     private function isLastActiveAdmin(User $user): bool
     {
-        return !User::where('is_admin', true)
+        return ! User::where('is_admin', true)
             ->where('is_active', true)
             ->where('id', '!=', $user->id)
             ->exists();
@@ -272,7 +272,7 @@ class UserController extends Controller
         $lower = 'abcdefghjkmnpqrstuvwxyz';
         $digits = '23456789';
         $symbols = '@#$%&*!';
-        $all = $upper . $lower . $digits . $symbols;
+        $all = $upper.$lower.$digits.$symbols;
 
         $pwd = [
             $upper[random_int(0, strlen($upper) - 1)],

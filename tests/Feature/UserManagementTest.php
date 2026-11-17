@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\InternalCategory;
 use App\Models\Product;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -108,7 +109,7 @@ class UserManagementTest extends TestCase
         $this->getJson('/api/users?role=encoder')->assertJsonPath('total', 2);
         $this->getJson('/api/users?status=inactive')->assertJsonPath('total', 1);
         $this->getJson('/api/users?status=active')->assertJsonPath('total', 2);
-        $this->getJson('/api/users?internal_category_id=' . $this->medical->id)
+        $this->getJson('/api/users?internal_category_id='.$this->medical->id)
             ->assertJsonPath('total', 1)
             ->assertJsonPath('data.0.last_name', 'Cruz');
     }
@@ -288,11 +289,11 @@ class UserManagementTest extends TestCase
         // 403 takes precedence over a missing password confirmation.
         $this->putJson("/api/products/{$theirs->id}", $this->productPayload($this->medical))->assertStatus(403);
         // Allowed when toggle is false (default: no password required).
-        \App\Models\SystemSetting::set('require_password_on_edit', false);
+        SystemSetting::set('require_password_on_edit', false);
         $this->putJson("/api/products/{$mine->id}", $this->productPayload($this->office))->assertOk();
 
         // When toggle is enabled by admin: password confirmation is required.
-        \App\Models\SystemSetting::set('require_password_on_edit', true);
+        SystemSetting::set('require_password_on_edit', true);
         $this->putJson("/api/products/{$mine->id}", $this->productPayload($this->office))->assertStatus(422);
         $this->putJson("/api/products/{$mine->id}", $this->productPayload($this->office, $confirm + ['unit_price' => 20]))->assertOk();
     }
@@ -315,7 +316,7 @@ class UserManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('settings.require_password_on_edit', true);
 
-        $this->assertTrue(\App\Models\SystemSetting::getBool('require_password_on_edit'));
+        $this->assertTrue(SystemSetting::getBool('require_password_on_edit'));
     }
 
     public function test_admin_writes_any_category_and_only_admin_deletes(): void
@@ -337,8 +338,8 @@ class UserManagementTest extends TestCase
         Product::create($this->productPayload($this->medical, ['item_description' => 'B', 'erp_item_code' => 'THEIRS-1', 'unit_price' => 1]));
 
         $csv = "a,erp,bb,pg,un,Item Description,uom,price\n"
-            . "1,MINE-1,,,,UPDATED MINE,piece,99\n"
-            . "2,THEIRS-1,,,,UPDATED THEIRS,piece,99\n";
+            ."1,MINE-1,,,,UPDATED MINE,piece,99\n"
+            ."2,THEIRS-1,,,,UPDATED THEIRS,piece,99\n";
         $file = UploadedFile::fake()->createWithContent('p.csv', $csv);
 
         Sanctum::actingAs($this->encoder([$this->office]));

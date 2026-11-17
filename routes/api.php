@@ -6,8 +6,9 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\InternalCategoryController;
 use App\Http\Controllers\Api\ItemUnitController;
-use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\UserController;
 
 // Public Authentication Endpoints
 // Public registration is disabled: accounts are created by administrators via POST /users

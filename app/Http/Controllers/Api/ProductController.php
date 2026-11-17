@@ -9,9 +9,10 @@ use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\InternalCategory;
 use App\Models\Product;
+use App\Models\SystemSetting;
+use App\Services\ProductExportImportService;
 use App\Services\ProductService;
 use App\Services\UniformNamingService;
-use App\Services\ProductExportImportService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -134,9 +135,9 @@ class ProductController extends Controller
         }
 
         // Password confirmation requirement on edit is toggleable by administrators
-        $requirePassword = \App\Models\SystemSetting::getBool('require_password_on_edit', false);
+        $requirePassword = SystemSetting::getBool('require_password_on_edit', false);
 
-        if ($requirePassword && (!$user || !$user->is_admin)) {
+        if ($requirePassword && (! $user || ! $user->is_admin)) {
             $password = $request->input('confirm_password') ?? $request->input('password');
             if (empty($password)) {
                 return response()->json([
@@ -197,7 +198,7 @@ class ProductController extends Controller
         $user = $request->user();
 
         foreach (array_unique($categoryIds, SORT_REGULAR) as $categoryId) {
-            if (!$user->canWriteInternalCategory($categoryId === null ? null : (int) $categoryId)) {
+            if (! $user->canWriteInternalCategory($categoryId === null ? null : (int) $categoryId)) {
                 return response()->json([
                     'message' => 'You are not assigned to this internal category.',
                 ], 403);

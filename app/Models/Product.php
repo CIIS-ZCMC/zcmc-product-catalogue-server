@@ -103,25 +103,25 @@ class Product extends Model
 
         return $query->where(function ($q) use ($term) {
             $q->where('item_description', 'like', "%{$term}%")
-              ->orWhere('noun', 'like', "%{$term}%")
-              ->orWhere('type', 'like', "%{$term}%")
-              ->orWhere('material_composition', 'like', "%{$term}%")
-              ->orWhere('key_attributes', 'like', "%{$term}%")
-              ->orWhere('size', 'like', "%{$term}%")
-              ->orWhere('other_specs', 'like', "%{$term}%")
-              ->orWhere('erp_item_code', 'like', "%{$term}%")
-              ->orWhere('bizbox_item_code', 'like', "%{$term}%")
-              ->orWhere('philgeps_code', 'like', "%{$term}%")
-              ->orWhere('stock_card_number', 'like', "%{$term}%")
-              ->orWhere('unspsc_code', 'like', "%{$term}%")
-              ->orWhereHas('categoryRelation', function ($catQ) use ($term) {
-                  $catQ->where('title', 'like', "%{$term}%")
-                       ->orWhere('code', 'like', "%{$term}%");
-              })
-              ->orWhereHas('internalCategory', function ($intQ) use ($term) {
-                  $intQ->where('name', 'like', "%{$term}%")
-                       ->orWhere('code', 'like', "%{$term}%");
-              });
+                ->orWhere('noun', 'like', "%{$term}%")
+                ->orWhere('type', 'like', "%{$term}%")
+                ->orWhere('material_composition', 'like', "%{$term}%")
+                ->orWhere('key_attributes', 'like', "%{$term}%")
+                ->orWhere('size', 'like', "%{$term}%")
+                ->orWhere('other_specs', 'like', "%{$term}%")
+                ->orWhere('erp_item_code', 'like', "%{$term}%")
+                ->orWhere('bizbox_item_code', 'like', "%{$term}%")
+                ->orWhere('philgeps_code', 'like', "%{$term}%")
+                ->orWhere('stock_card_number', 'like', "%{$term}%")
+                ->orWhere('unspsc_code', 'like', "%{$term}%")
+                ->orWhereHas('categoryRelation', function ($catQ) use ($term) {
+                    $catQ->where('title', 'like', "%{$term}%")
+                        ->orWhere('code', 'like', "%{$term}%");
+                })
+                ->orWhereHas('internalCategory', function ($intQ) use ($term) {
+                    $intQ->where('name', 'like', "%{$term}%")
+                        ->orWhere('code', 'like', "%{$term}%");
+                });
         });
     }
 

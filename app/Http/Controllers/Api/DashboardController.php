@@ -7,7 +7,6 @@ use App\Models\Category;
 use App\Models\InternalCategory;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -80,6 +79,7 @@ class DashboardController extends Controller
 
         $internalCategoryDistribution = $internalCategories->map(function ($cat) use ($totalProducts) {
             $percentage = $totalProducts > 0 ? round(($cat->products_count / $totalProducts) * 100, 1) : 0;
+
             return [
                 'id' => $cat->id,
                 'name' => $cat->name,

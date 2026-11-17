@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\QueryTokenAuthentication;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -17,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => response()->json(['message' => 'Unauthenticated.'], 401));
         $middleware->alias([
-            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'admin' => EnsureUserIsAdmin::class,
         ]);
         $middleware->api(prepend: [
             QueryTokenAuthentication::class,

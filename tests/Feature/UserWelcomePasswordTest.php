@@ -9,7 +9,6 @@ use App\Models\InternalCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -83,6 +82,7 @@ class UserWelcomePasswordTest extends TestCase
         // Assert welcome email job dispatched with auto-generated initial password
         Queue::assertPushed(SendWelcomeEmailJob::class, function (SendWelcomeEmailJob $job) use ($user) {
             $initialPassword = $job->initialPassword;
+
             return $job->user->id === $user->id
                 && strlen($initialPassword) >= 8
                 && Hash::check($initialPassword, $user->password);
@@ -143,14 +143,14 @@ class UserWelcomePasswordTest extends TestCase
             'password' => $initialPassword,
             'password_confirmation' => $initialPassword,
         ])->assertStatus(422)
-          ->assertJsonValidationErrors(['password']);
+            ->assertJsonValidationErrors(['password']);
 
         // 2. Setting weak new password is rejected
         $this->postJson('/api/auth/change-password', [
             'password' => 'onlyletters',
             'password_confirmation' => 'onlyletters',
         ])->assertStatus(422)
-          ->assertJsonValidationErrors(['password']);
+            ->assertJsonValidationErrors(['password']);
 
         // 3. Setting valid new password without providing initial password succeeds
         $newPassword = 'MyOwnNew@Password2026';
@@ -171,7 +171,7 @@ class UserWelcomePasswordTest extends TestCase
             'password' => 'Another@Password789',
             'password_confirmation' => 'Another@Password789',
         ])->assertStatus(422)
-          ->assertJsonValidationErrors(['current_password']);
+            ->assertJsonValidationErrors(['current_password']);
 
         // 5. Wrong current password fails
         $this->postJson('/api/auth/change-password', [
@@ -179,7 +179,7 @@ class UserWelcomePasswordTest extends TestCase
             'password' => 'Another@Password789',
             'password_confirmation' => 'Another@Password789',
         ])->assertStatus(422)
-          ->assertJsonValidationErrors(['current_password']);
+            ->assertJsonValidationErrors(['current_password']);
 
         // 6. Correct current password succeeds
         $this->postJson('/api/auth/change-password', [

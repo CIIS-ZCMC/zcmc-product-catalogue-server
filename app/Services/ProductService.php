@@ -147,7 +147,7 @@ class ProductService
             $product->only([
                 'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
                 'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code', 'stock_card_number',
-                'unspsc_code', 'category_key', 'internal_category_id', 'other_specs'
+                'unspsc_code', 'category_key', 'internal_category_id', 'other_specs',
             ])
         );
 
@@ -163,7 +163,7 @@ class ProductService
         $oldValues = $product->only([
             'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
             'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code', 'stock_card_number',
-            'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path'
+            'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path',
         ]);
 
         // Build standard item description from structured attributes if provided
@@ -196,7 +196,7 @@ class ProductService
             if (abs($oldPrice - $newPrice) > 0.001) {
                 $change = $newPrice - $oldPrice;
                 $pct = $oldPrice > 0 ? round(($change / $oldPrice) * 100, 2) : 0;
-                $reason = !empty($data['price_change_reason']) ? $data['price_change_reason'] : 'Unit price adjustment / Inflation update';
+                $reason = ! empty($data['price_change_reason']) ? $data['price_change_reason'] : 'Unit price adjustment / Inflation update';
 
                 ProductPriceHistory::create([
                     'product_id' => $product->id,
@@ -209,9 +209,9 @@ class ProductService
                 ]);
 
                 $desc = $data['item_description'] ?? $product->item_description;
-                \App\Models\ActivityLog::record(
+                ActivityLog::record(
                     'PRICE_UPDATED',
-                    "Price updated for {$desc} ({$product->erp_item_code}): PHP " . number_format($oldPrice, 2) . " to PHP " . number_format($newPrice, 2) . " ({$reason})",
+                    "Price updated for {$desc} ({$product->erp_item_code}): PHP ".number_format($oldPrice, 2).' to PHP '.number_format($newPrice, 2)." ({$reason})",
                     'Product',
                     $product->id,
                     $product->erp_item_code,
@@ -234,7 +234,7 @@ class ProductService
         $newValues = $fresh->only([
             'erp_item_code', 'item_description', 'noun', 'type', 'material_composition',
             'key_attributes', 'size', 'uom', 'bizbox_item_code', 'philgeps_code', 'stock_card_number',
-            'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path'
+            'unspsc_code', 'category_key', 'internal_category_id', 'other_specs', 'tech_specs_pdf_path',
         ]);
 
         // Diff old and new values to capture only changed fields
@@ -268,7 +268,7 @@ class ProductService
     public function deleteProduct(Product $product): bool
     {
         $snapshot = $product->only([
-            'id', 'erp_item_code', 'item_description', 'noun', 'bizbox_item_code', 'philgeps_code', 'stock_card_number', 'uom'
+            'id', 'erp_item_code', 'item_description', 'noun', 'bizbox_item_code', 'philgeps_code', 'stock_card_number', 'uom',
         ]);
 
         ActivityLog::record(

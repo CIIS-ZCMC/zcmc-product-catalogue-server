@@ -201,7 +201,7 @@ class ActivityLogScopeTest extends TestCase
 
         Sanctum::actingAs($admin);
 
-        $response = $this->getJson('/api/activity-logs?user_id=' . $encoder->id);
+        $response = $this->getJson('/api/activity-logs?user_id='.$encoder->id);
         $response->assertOk();
 
         $data = $response->json('data');

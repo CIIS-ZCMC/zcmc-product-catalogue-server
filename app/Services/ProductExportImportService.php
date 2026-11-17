@@ -6,8 +6,8 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -110,7 +110,7 @@ class ProductExportImportService
      */
     public function importCsv(UploadedFile $file, ?User $user = null): array
     {
-        if ($user && !$user->is_admin) {
+        if ($user && ! $user->is_admin) {
             return DB::transaction(fn () => $this->runImport($file, $user));
         }
 
@@ -142,10 +142,10 @@ class ProductExportImportService
             }
 
             try {
-                $erpCode = !empty($row[1]) ? trim($row[1]) : ('ZCMC-' . strtoupper(uniqid()));
-                if ($user && !$user->is_admin) {
+                $erpCode = ! empty($row[1]) ? trim($row[1]) : ('ZCMC-'.strtoupper(uniqid()));
+                if ($user && ! $user->is_admin) {
                     $existing = Product::where('erp_item_code', $erpCode)->first();
-                    if (!$user->canWriteInternalCategory($existing?->internal_category_id)) {
+                    if (! $user->canWriteInternalCategory($existing?->internal_category_id)) {
                         throw new AuthorizationException(
                             "Row {$rowIndex}: you can only import products in your assigned internal categories."
                         );

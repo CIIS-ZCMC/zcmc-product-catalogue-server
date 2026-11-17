@@ -18,7 +18,9 @@ class ProductPriceActivityLogTest extends TestCase
     use RefreshDatabase;
 
     private InternalCategory $office;
+
     private Category $category;
+
     private ProductService $productService;
 
     protected function setUp(): void

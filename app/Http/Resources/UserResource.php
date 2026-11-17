@@ -2,11 +2,13 @@
 
 namespace App\Http\Resources;
 
+use App\Models\InternalCategory;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\User
+ * @mixin User
  */
 class UserResource extends JsonResource
 {
@@ -30,7 +32,7 @@ class UserResource extends JsonResource
             'must_change_password' => (bool) $this->must_change_password,
             'internal_category_ids' => $categories->pluck('id')->values()->all(),
             'internal_categories' => $categories
-                ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'code' => $c->code])
+                ->map(fn (InternalCategory $c) => ['id' => $c->id, 'name' => $c->name, 'code' => $c->code])
                 ->values()
                 ->all(),
             'created_at' => $this->created_at,

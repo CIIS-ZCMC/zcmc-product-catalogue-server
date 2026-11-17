@@ -16,7 +16,9 @@ class ProductStockCardNumberCrudTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private InternalCategory $office;
+
     private Category $category;
 
     protected function setUp(): void
