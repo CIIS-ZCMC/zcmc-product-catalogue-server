@@ -62,4 +62,4 @@ RUN mkdir -p /app/storage/logs \
 EXPOSE 80 443
 
 # Start Laravel Octane on FrankenPHP with Caddy
-CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--caddyfile=/etc/caddy/Caddyfile", "--host=0.0.0.0", "--port=80"]
+CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--caddyfile=/etc/caddy/Caddyfile", "--host=0.0.0.0", "--port=80", "--admin-port=2019"]
