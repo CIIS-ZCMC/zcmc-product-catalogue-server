@@ -1,15 +1,11 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\InternalCategoryController;
 use App\Http\Controllers\Api\ItemUnitController;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\SettingController;
 
@@ -87,5 +83,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
     Route::get('/products/{id}/activity-logs', [ActivityLogController::class, 'productLogs']);
 });
-
-

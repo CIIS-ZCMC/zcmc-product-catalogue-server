@@ -2,8 +2,8 @@
 
 namespace App\Mail;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
@@ -17,9 +17,7 @@ class PasswordResetOtpMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public \App\Models\User $user, public string $otp)
-    {
-    }
+    public function __construct(public User $user, public string $otp) {}
 
     /**
      * Get the message envelope.

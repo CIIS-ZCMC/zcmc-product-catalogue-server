@@ -15,10 +15,10 @@ class QueryTokenAuthentication
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->bearerToken()) {
+        if (! $request->bearerToken()) {
             $token = $request->query('token') ?? $request->query('api_token');
             if ($token) {
-                $request->headers->set('Authorization', 'Bearer ' . $token);
+                $request->headers->set('Authorization', 'Bearer '.$token);
             }
         }
 

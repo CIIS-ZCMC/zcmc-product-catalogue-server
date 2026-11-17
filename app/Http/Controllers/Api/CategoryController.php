@@ -121,6 +121,7 @@ class CategoryController extends Controller
 
         try {
             $this->categoryService->deleteCategory($category);
+
             return response()->json([
                 'message' => 'Category deleted successfully.',
             ]);

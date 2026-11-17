@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
 use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\Request;
@@ -99,11 +98,12 @@ class ActivityLog extends Model
             ]);
         } catch (\Throwable $e) {
             // Fail-safe: write to standard application log without interrupting core operations
-            Log::warning('ActivityLog recording failed: ' . $e->getMessage(), [
+            Log::warning('ActivityLog recording failed: '.$e->getMessage(), [
                 'action' => $action,
                 'entity_type' => $entityType,
                 'entity_id' => $entityId,
             ]);
+
             return null;
         }
     }
@@ -113,7 +113,7 @@ class ActivityLog extends Model
      */
     protected static function sanitizePayload(?array $payload): ?array
     {
-        if (!$payload) {
+        if (! $payload) {
             return null;
         }
 

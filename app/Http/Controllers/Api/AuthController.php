@@ -3,15 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -31,7 +28,7 @@ class AuthController extends Controller
         $user = User::where('email', $email)->first();
 
         // Check password against encrypted/hashed password in database
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
             return response()->json([
                 'message' => 'Invalid email or password credentials.',
                 'errors' => [
@@ -53,8 +50,84 @@ class AuthController extends Controller
             'message' => 'Login successful.',
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => (new UserResource($user->loadMissing('internalCategories')))->resolve(),
+            'user' => [
+                'id' => $user->id,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_admin' => (bool) $user->is_admin,
+                'created_at' => $user->created_at,
+            ],
         ]);
+    }
+
+    /**
+     * Register a new user with first name, last name, email, and strong password.
+     */
+    public function register(Request $request): JsonResponse
+    {
+        // Support either first_name/last_name or combined name input
+        if (!$request->filled('first_name') && $request->filled('name')) {
+            $parts = explode(' ', trim($request->input('name')), 2);
+            $request->merge([
+                'first_name' => $parts[0] ?: 'User',
+                'last_name' => $parts[1] ?? '',
+            ]);
+        }
+
+        $passwordRules = [
+            'required',
+            'string',
+            Password::min(8)
+                ->letters()
+                ->numbers()
+                ->symbols(),
+        ];
+
+        if ($request->has('password_confirmation')) {
+            $passwordRules[] = 'confirmed';
+        }
+
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => $passwordRules,
+        ]);
+
+        $firstName = trim($validated['first_name']);
+        $lastName = trim($validated['last_name'] ?? '');
+        $email = strtolower(trim($validated['email']));
+
+        // Create user with first_name, last_name, and securely hashed password
+        $user = User::create([
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $email,
+            'password' => $validated['password'],
+        ]);
+
+        // Dispatch Welcome Email asynchronously via queued job
+        \App\Jobs\SendWelcomeEmailJob::dispatch($user);
+
+        // Generate Sanctum access token for immediate authentication
+        $token = $user->createToken('zcmc_catalogue_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'User registered and authenticated successfully.',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => [
+                'id' => $user->id,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_admin' => (bool) $user->is_admin,
+                'created_at' => $user->created_at,
+            ],
+        ], 201);
     }
 
     /**
@@ -69,14 +142,14 @@ class AuthController extends Controller
         $email = strtolower(trim($validated['email']));
         $user = User::where('email', $email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'message' => 'If an account exists with that email, a password reset code has been sent.',
             ]);
         }
 
         // Generate 6-digit OTP code
-        $otp = sprintf("%06d", mt_rand(100000, 999999));
+        $otp = sprintf('%06d', mt_rand(100000, 999999));
 
         // Store hashed OTP in password_reset_tokens table
         DB::table('password_reset_tokens')->updateOrInsert(
@@ -88,7 +161,7 @@ class AuthController extends Controller
         );
 
         // Dispatch Password Reset OTP Email asynchronously via queued job
-        \App\Jobs\SendPasswordResetOtpJob::dispatch($user, $otp);
+        SendPasswordResetOtpJob::dispatch($user, $otp);
 
         return response()->json([
             'message' => 'A 6-digit password reset code has been sent to your email address.',
@@ -120,7 +193,7 @@ class AuthController extends Controller
             ->where('email', $email)
             ->first();
 
-        if (!$record) {
+        if (! $record) {
             return response()->json([
                 'message' => 'No active password reset request found for this email.',
             ], 422);
@@ -130,13 +203,14 @@ class AuthController extends Controller
         $createdAt = Carbon::parse($record->created_at);
         if ($createdAt->addMinutes(15)->isPast()) {
             DB::table('password_reset_tokens')->where('email', $email)->delete();
+
             return response()->json([
                 'message' => 'The reset code has expired. Please request a new code.',
             ], 422);
         }
 
         // Check code against bcrypt hash
-        if (!Hash::check($code, $record->token)) {
+        if (! Hash::check($code, $record->token)) {
             return response()->json([
                 'message' => 'Invalid verification code. Please check your email and try again.',
             ], 422);
@@ -144,7 +218,7 @@ class AuthController extends Controller
 
         // Update password
         $user = User::where('email', $email)->first();
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'message' => 'User account not found.',
             ], 404);
@@ -257,4 +331,3 @@ class AuthController extends Controller
         ]);
     }
 }
-

@@ -13,12 +13,13 @@ class CategorySeeder extends Seeder
     public function run(): void
     {
         $csvPath = database_path('data/unspsc_categories.csv');
-        if (!file_exists($csvPath)) {
+        if (! file_exists($csvPath)) {
             $csvPath = database_path('data/categories.csv');
         }
 
-        if (!file_exists($csvPath)) {
+        if (! file_exists($csvPath)) {
             $this->command->error("Categories CSV file not found at: {$csvPath}");
+
             return;
         }
 
@@ -41,7 +42,7 @@ class CategorySeeder extends Seeder
         DB::beginTransaction();
 
         while (($row = fgetcsv($handle)) !== false) {
-            if (!isset($row[0]) || !is_numeric($row[0])) {
+            if (! isset($row[0]) || ! is_numeric($row[0])) {
                 continue;
             }
 
@@ -50,12 +51,12 @@ class CategorySeeder extends Seeder
                 continue;
             }
             $seenKeys[$key] = true;
-            $parentKey = !empty($row[1]) && is_numeric($row[1]) ? (int) trim($row[1]) : null;
-            $code = !empty($row[2]) ? trim($row[2]) : null;
+            $parentKey = ! empty($row[1]) && is_numeric($row[1]) ? (int) trim($row[1]) : null;
+            $code = ! empty($row[2]) ? trim($row[2]) : null;
             $title = isset($row[3]) ? trim($row[3]) : '';
             $level = isset($row[4]) && is_numeric($row[4]) ? (int) $row[4] : 0;
-            $path = isset($row[5]) && !empty($row[5]) ? trim($row[5]) : "/{$key}/";
-            $definition = isset($row[6]) && !empty($row[6]) ? trim($row[6]) : null;
+            $path = isset($row[5]) && ! empty($row[5]) ? trim($row[5]) : "/{$key}/";
+            $definition = isset($row[6]) && ! empty($row[6]) ? trim($row[6]) : null;
 
             $batch[] = [
                 'key' => $key,

@@ -2,8 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property Category|null $categoryRelation
+ * @property InternalCategory|null $internalCategory
+ * @property Collection<int, ProductPriceHistory> $priceHistories
+ */
 class Product extends Model
 {
     protected $fillable = [
@@ -56,24 +64,30 @@ class Product extends Model
 
     /**
      * Associated UNSPSC / Catalogue Category.
+     *
+     * @return BelongsTo<Category, $this>
      */
-    public function categoryRelation()
+    public function categoryRelation(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_key', 'key');
     }
 
     /**
      * Associated Internal Institution Category.
+     *
+     * @return BelongsTo<InternalCategory, $this>
      */
-    public function internalCategory()
+    public function internalCategory(): BelongsTo
     {
         return $this->belongsTo(InternalCategory::class, 'internal_category_id');
     }
 
     /**
      * Unit price change history tracking (inflation & price movements over time).
+     *
+     * @return HasMany<ProductPriceHistory, $this>
      */
-    public function priceHistories()
+    public function priceHistories(): HasMany
     {
         return $this->hasMany(ProductPriceHistory::class)->orderBy('effective_date', 'desc');
     }
@@ -126,10 +140,11 @@ class Product extends Model
      */
     public function getTechSpecsPdfUrlAttribute(): ?string
     {
-        if (!$this->tech_specs_pdf_path) {
+        if (! $this->tech_specs_pdf_path) {
             return null;
         }
-        return asset('storage/' . $this->tech_specs_pdf_path);
+
+        return asset('storage/'.$this->tech_specs_pdf_path);
     }
 
     /**
@@ -146,7 +161,8 @@ class Product extends Model
     public function getCategoryGroupAttribute(): ?string
     {
         $hierarchy = $this->category_hierarchy;
-        return !empty($hierarchy) ? $hierarchy[0]['title'] : null;
+
+        return ! empty($hierarchy) ? $hierarchy[0]['title'] : null;
     }
 
     /**
@@ -161,7 +177,8 @@ class Product extends Model
         } elseif ($count === 2) {
             return $hierarchy[1]['title'] ?? null;
         }
-        return !empty($hierarchy) ? $hierarchy[0]['title'] : null;
+
+        return ! empty($hierarchy) ? $hierarchy[0]['title'] : null;
     }
 
     /**
@@ -177,7 +194,7 @@ class Product extends Model
      */
     public function getCategoryHierarchyAttribute(): array
     {
-        if (!$this->categoryRelation) {
+        if (! $this->categoryRelation) {
             return [];
         }
 
@@ -211,9 +228,10 @@ class Product extends Model
             return $query;
         }
 
-        $category = \App\Models\Category::find($categoryKey);
+        $category = Category::find($categoryKey);
         if ($category) {
             $descendantKeys = $category->getAllDescendantKeys();
+
             return $query->whereIn('category_key', $descendantKeys);
         }
 

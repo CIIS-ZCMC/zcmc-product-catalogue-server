@@ -2,12 +2,12 @@
 
 namespace App\Jobs;
 
-use App\Models\User;
 use App\Mail\PasswordResetOtpMail;
+use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SendPasswordResetOtpJob implements ShouldQueue
 {
@@ -40,7 +40,7 @@ class SendPasswordResetOtpJob implements ShouldQueue
             Mail::to($this->user->email)->send(new PasswordResetOtpMail($this->user, $this->otp));
             Log::info("Password reset OTP email sent successfully to {$this->user->email}");
         } catch (\Throwable $e) {
-            Log::error("Failed to send password reset OTP to {$this->user->email}: " . $e->getMessage());
+            Log::error("Failed to send password reset OTP to {$this->user->email}: ".$e->getMessage());
             throw $e;
         }
     }
